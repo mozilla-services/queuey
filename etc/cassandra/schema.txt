@@ -15,12 +15,14 @@ create keyspace MessageStore
 use MessageStore;
 
 create column family Stores
-    with comparator DateType;
+    with comparator = DateType
+    and rows_cached = 100
+    ;
 
 create column family Applications
-    with comparator UTF8Type
+    with comparator = UTF8Type
     and column_metadata = [{
         column_name : queues,
-        validation_class : UUIDType,
+        validation_class : UUIDType
         }
     ];

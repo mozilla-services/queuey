@@ -35,7 +35,7 @@ on the system.
 
 In addition, you'll need to start Cassandra and create the
 schema:
-* bin/cassandra/bin/cassandra-cli -host localhost --file etc/schema.txt
+* bin/cassandra/bin/cassandra-cli -host localhost --file etc/cassandra/schema.txt
 
 Running the Server:
 -------------------
@@ -43,10 +43,10 @@ The message store (used by the server to route messages)
 and the HTTP server must be started separately. The steps
 are (starting from the root project directory)
 
-1. Run "./bin/cassandra/bin/cassandra"
+1. Run "./bin/cassandra/bin/cassandra -p cassandra.pid"
    to start the message broker. 
    To shut it down at any point in the future, run 
-   "./bin/rabbitmq-server/sbin/rabbitmqctl stop"
+   "kill -2 `cat cassandra.pid`"
 
 2. Run "bin/paster serve development.ini" to start the
    MessageQueue Service.

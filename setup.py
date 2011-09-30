@@ -20,8 +20,6 @@ setup(
         client_agent = message.clientagent:make_client_agent
         post_office = notifserver.postoffice:make_post_office
         post_office_router = notifserver.postoffice:make_post_office_router
-        [paste.filter_app_factory]
-        basic_auth = notifserver.auth:make_basic_auth
     """,
 
     test_suite = 'nose.collector',

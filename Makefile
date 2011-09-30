@@ -22,7 +22,10 @@ cassandra:
 	cd bin && \
 	curl --silent http://ftp.wayne.edu/apache//cassandra/0.8.6/apache-cassandra-0.8.6-bin.tar.gz | tar -zvx
 	mv bin/apache-cassandra-0.8.6 bin/cassandra
-	cp etc/cassandra.yaml bin/cassandra/conf/cassandra.yaml
+	cp etc/cassandra/cassandra.yaml bin/cassandra/conf/cassandra.yaml
+	cp etc/cassandra/log4j-server.properties bin/cassandra/conf/log4j-server.properties
+	cd bin/cassandra/lib && \
+	curl -O http://java.net/projects/jna/sources/svn/content/trunk/jnalib/dist/jna.jar
 
 clean-cassandra:
 	rm -rf cassandra
