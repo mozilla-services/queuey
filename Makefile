@@ -7,7 +7,7 @@ NOSE = bin/nosetests -s --with-xunit
 
 .PHONY:	all env cassandra
 
-all:	env
+all:	env cassandra
 
 env:
 	rm -rf bin build deps include lib lib64

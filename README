@@ -24,7 +24,7 @@ cd into the directory and run make.
 This will do the following:
 - Create a virtual python environment 
 - Install required python packages into this environment
-- Fetch the cassandra server and set up a configuration
+- Fetch the cassandra server and set up the configuration
 
 After make completes all of these tasks, if it hasn't
 terminated with an error then everything should be set.
@@ -35,32 +35,18 @@ on the system.
 
 In addition, you'll need to start Cassandra and create the
 schema:
-* 
+* bin/cassandra/bin/cassandra-cli -host localhost --file etc/schema.txt
 
 Running the Server:
 -------------------
-The message broker (used by the server to route messages)
+The message store (used by the server to route messages)
 and the HTTP server must be started separately. The steps
 are (starting from the root project directory)
 
-1. Run "./bin/rabbitmq-server/sbin/rabbitmq-server"
+1. Run "./bin/cassandra/bin/cassandra"
    to start the message broker. 
    To shut it down at any point in the future, run 
    "./bin/rabbitmq-server/sbin/rabbitmqctl stop"
 
 2. Run "bin/paster serve development.ini" to start the
-   POST Office and Client Agent HTTP server.
-
-Monitoring the Server:
-----------------------
-You can monitor the RabbitMQ server once it has started by 
-navigating to http://localhost:55672/mgmt in a browser (if 
-you're using the out-of-the-box configuration). This takes
-you to the RabbitMQ Management web console, which itself is
-relatively self-explanatory. Note that this should really 
-only be used for development purposes, as having the 
-management console running can reduce througput.
-You can read more about the Management plugin here:
-http://www.rabbitmq.com/management.html
-
-
+   MessageQueue Service.
