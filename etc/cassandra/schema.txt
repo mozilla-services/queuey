@@ -15,7 +15,8 @@ create keyspace MessageStore
 use MessageStore;
 
 create column family Stores
-    with comparator = DateType
+    with comparator = UUIDType
+    and default_validation_class = UUIDType
     and rows_cached = 100
     ;
 

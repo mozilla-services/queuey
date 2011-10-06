@@ -29,7 +29,7 @@ This will do the following:
 After make completes all of these tasks, if it hasn't
 terminated with an error then everything should be set.
 
-The default Cassandra stores its data and files inside the
+The default (Cassandra) stores its data and files inside the
 so at not to interfere with any existing Cassandra installations
 on the system.
 
