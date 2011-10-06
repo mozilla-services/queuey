@@ -10,8 +10,6 @@ EZ = bin/easy_install
 NOSE = bin/nosetests -s --with-xunit
 CASSANDRA = bin/cassandra/bin/cassandra
 
-.PHONY:	all clean-env setup clean test clean-cassandra
-
 all: $(PROJECT) $(CASSANDRA)
 
 $(BIN)/python:
@@ -48,3 +46,5 @@ clean:	clean-cassandra clean-env
 
 test: 
 	$(NOSE) messagequeue/tests
+
+.PHONY:	all clean-env setup clean test clean-cassandra
