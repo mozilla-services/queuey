@@ -64,6 +64,22 @@ class CassandraQueueBackend(object):
 
         """
         hosts = parse_hosts(host)
-        pool = pycassa.connect(database, hosts)
-
+        self.pool = pool = pycassa.connect(database, hosts)
+        self.store_fam = pycassa.ColumnFamily(pool, 'Stores')
+        self.app_fam = pycassa.ColumnFamily(pool, 'Applications')
     
+    def retrieve(self, queue_name, limit=None, timestamp=None,
+                 order="ascending"):
+        """Retrieve a message off the queue"""
+        kwargs = {}
+        if order == 'descending':
+            kwargs['column_reversed'] = True
+        
+        if limit:
+            kwargs['column_count'] = limit
+        
+        if timestamp:
+            kwargs['column_start'] = timestamp
+        
+        results = self.store_fam.get(queue_name, **kwargs)
+
