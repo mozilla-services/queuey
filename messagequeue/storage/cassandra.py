@@ -33,44 +33,37 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
-"""MessageQueue Storage Interface"""
-from zope.interface import Interface
+from zope.interface import implements
+import pycassa
 
-class MessageQueueBackend(Interface):
-    """A MessageQueue Backend"""
-    def __init__(self, username=None, password=None, database='MessageQueue', 
-                 host='localhost'):
-        """Initialize the backend"""
+from messagequeue.storage import MessageQueueBackend
 
-    def retrieve(self, queue_name, limit=None, timestamp=None,
-                 order="ascending"):
-        """Retrieve messages from a queue
+def parse_hosts(raw_hosts):
+    """Parses out hosts into a list"""
+    hosts = []
+    if ',' in raw_hosts:
+        names = [x.strip() for x in raw_hosts.split(',')]
+    else:
+        names = [raw_hosts]
+    for name in names:
+        if ':' not in name:
+            name += ':9160'
+        hosts.append(name)
+    return hosts
 
-        :param queue_name: Queue name
-        :param type: string
-        :param limit: Amount of messages to retrieve
-        :param type: int
-        :param timestamp: Retrieve messages starting with this timestamp
-        :param type: datetime
-        :param order: Which order to traverse the messages. Defaults to
-                      ascending order.
-        :type order: ascending/descending
-        :param type: order
 
-        """
+class CassandraQueueBackend(object):
+    implements(MessageQueueBackend)
     
-    def push(self, queue_name, message):
-        """Push a message onto the given queue
-        
-        The queue is assumed to exist, and will be created if it does not
-        exist.
+    def __init__(self, username=None, password=None, database='MessageStore',
+                 host='localhost'):
+        """Create a Cassandra backend for the Message Queue
 
-        :param queue_name: Queue name
-        :param type: string
-        :param message: Message to add to the queue
-        :param type: string
+        :param host: Hostname, accepts either an IP, hostname, hostname:port,
+                     or a comma seperated list of 'hostname:port'
 
         """
+        hosts = parse_hosts(host)
+        pool = pycassa.connect(database, hosts)
 
-    def exists(self, queue_name):
-        """Check to see if a queue of a given name exists"""
+    
