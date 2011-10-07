@@ -33,21 +33,3 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
-from pyramid.config import Configurator
-from pyramid.events import NewRequest
-
-
-def main(global_config, **settings):
-    """ This function returns a Pyramid WSGI application."""
-    config = Configurator(settings=settings)
-    
-    # Setup database connection, and request subscriber
-    
-    
-    # Version 1.0 MessageStore API
-    MSAPI = '1.0'
-    config.add_route('new_queue', '/%s/new' % MSAPI, 
-                     view='messagequeue.views.new_queue')
-    
-    # config.add_static_view('static', 'messagequeue:static', cache_max_age=3600)
-    return config.make_wsgi_app()

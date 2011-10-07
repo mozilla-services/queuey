@@ -17,9 +17,7 @@ setup(
 
     entry_points="""
         [paste.app_factory]
-        client_agent = message.clientagent:make_client_agent
-        post_office = notifserver.postoffice:make_post_office
-        post_office_router = notifserver.postoffice:make_post_office_router
+        main = messagequeue:main
     """,
 
     test_suite = 'nose.collector',

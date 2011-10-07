@@ -33,21 +33,43 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
-from pyramid.config import Configurator
-from pyramid.events import NewRequest
+"""MessageQueue Storage Interface"""
+from zope.interface import Interface
 
+class MessageQueueBackend(Interface):
+    """A MessageQueue Backend"""
+    def __init__(self, username=None, password=None, host='localhost'):
+        """Initialize the backend"""
 
-def main(global_config, **settings):
-    """ This function returns a Pyramid WSGI application."""
-    config = Configurator(settings=settings)
+    def retrieve(self, queue_name, limit=None, timestamp=None,
+                 order="ascending"):
+        """Retrieve messages from a queue
+
+        :param queue_name: Queue name
+        :param type: string
+        :param limit: Amount of messages to retrieve
+        :param type: int
+        :param timestamp: Retrieve messages starting with this timestamp
+        :param type: datetime
+        :param order: Which order to traverse the messages. Defaults to
+                      ascending order.
+        :type order: ascending/descending
+        :param type: order
+
+        """
     
-    # Setup database connection, and request subscriber
-    
-    
-    # Version 1.0 MessageStore API
-    MSAPI = '1.0'
-    config.add_route('new_queue', '/%s/new' % MSAPI, 
-                     view='messagequeue.views.new_queue')
-    
-    # config.add_static_view('static', 'messagequeue:static', cache_max_age=3600)
-    return config.make_wsgi_app()
+    def push(self, queue_name, message):
+        """Push a message onto the given queue
+        
+        The queue is assumed to exist, and will be created if it does not
+        exist.
+
+        :param queue_name: Queue name
+        :param type: string
+        :param message: Message to add to the queue
+        :param type: string
+
+        """
+
+    def exists(self, queue_name):
+        """Check to see if a queue of a given name exists"""

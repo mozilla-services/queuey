@@ -33,21 +33,18 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
-from pyramid.config import Configurator
-from pyramid.events import NewRequest
 
+import os
+from paste.deploy import loadapp
+from logging.config import fileConfig
+from ConfigParser import NoSectionError
 
-def main(global_config, **settings):
-    """ This function returns a Pyramid WSGI application."""
-    config = Configurator(settings=settings)
-    
-    # Setup database connection, and request subscriber
-    
-    
-    # Version 1.0 MessageStore API
-    MSAPI = '1.0'
-    config.add_route('new_queue', '/%s/new' % MSAPI, 
-                     view='messagequeue.views.new_queue')
-    
-    # config.add_static_view('static', 'messagequeue:static', cache_max_age=3600)
-    return config.make_wsgi_app()
+os.environ['PYTHON_EGG_CACHE'] = '/tmp/python-eggs'
+
+ini_file = os.path.join('/etc', 'messagequeue', 'production.ini')
+try:
+    fileConfig(ini_file)
+except NoSectionError:
+    pass
+
+application = loadapp('config:%s' % ini_file)
