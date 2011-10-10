@@ -47,7 +47,7 @@ class MessageQueueBackend(Interface):
         """Retrieve messages from a queue
 
         :param queue_name: Queue name
-        :param type: string
+        :param type: UUID hex string
         :param limit: Amount of messages to retrieve
         :param type: int
         :param timestamp: Retrieve messages starting with this timestamp
@@ -66,7 +66,7 @@ class MessageQueueBackend(Interface):
         exist.
 
         :param queue_name: Queue name
-        :param type: string
+        :param type: UUID hex string
         :param message: Message to add to the queue
         :param type: string
         :param ttl: Time to Live in seconds for the message, after this

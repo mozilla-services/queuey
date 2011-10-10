@@ -70,27 +70,38 @@ class CassandraQueueBackend(object):
         self.pool = pool = pycassa.connect(database, hosts)
         self.store_fam = pycassa.ColumnFamily(pool, 'Stores')
         self.app_fam = pycassa.ColumnFamily(pool, 'Applications')
-    
+
     def retrieve(self, queue_name, limit=None, timestamp=None,
                  order="ascending"):
         """Retrieve a message off the queue"""
+        queue_name = uuid.UUID(queue_name).bytes
         kwargs = {}
         if order == 'descending':
             kwargs['column_reversed'] = True
-        
+
         if limit:
             kwargs['column_count'] = limit
-        
+
         if timestamp:
             kwargs['column_start'] = timestamp
-        
-        results = self.store_fam.get(queue_name, **kwargs)
-        ordered = sorted(results.items(), key=lambda x: (x[0].time, x[0].bytes))
-        if order == 'descending':
-            ordered = ordered.reverse()
-        return ordered
+
+        try:
+            results = self.store_fam.get(queue_name, **kwargs)
+        except pycassa.NotFoundException as exc:
+            return []
+        results = [(uuid.UUID(bytes=x), y) for x,y in results.items()]
+        return results
 
     def push(self, queue_name, message, ttl=60*60*24*3):
         """Push a message onto the queue"""
-        now = uuid.uuid1()
+        queue_name = uuid.UUID(queue_name).bytes
+        now = uuid.uuid1().bytes
         self.store_fam.insert(queue_name, {now: message}, ttl=ttl)
+
+    def exists(self, queue_name):
+        """Return whether the queue exists or not"""
+        queue_name = uuid.UUID(queue_name).bytes
+        try:
+            return bool(self.store_fam.get(queue_name, column_count=1))
+        except pycassa.NotFoundException as exc:
+            return False
