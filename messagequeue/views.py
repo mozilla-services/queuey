@@ -34,4 +34,14 @@
 #
 # ***** END LICENSE BLOCK *****
 def new_queue(request):
-    
+    pass
+
+def delete_queue(request):
+    pass
+
+def clear_queue(request):
+    pass
+
+def add_message(request):
+    pass
+

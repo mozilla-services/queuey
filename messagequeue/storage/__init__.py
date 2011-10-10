@@ -59,7 +59,7 @@ class MessageQueueBackend(Interface):
 
         """
     
-    def push(self, queue_name, message):
+    def push(self, queue_name, message, ttl=3600*24*3):
         """Push a message onto the given queue
         
         The queue is assumed to exist, and will be created if it does not
@@ -69,6 +69,9 @@ class MessageQueueBackend(Interface):
         :param type: string
         :param message: Message to add to the queue
         :param type: string
+        :param ttl: Time to Live in seconds for the message, after this
+                    period the message should be unavilable
+        :param type: int
 
         """
 

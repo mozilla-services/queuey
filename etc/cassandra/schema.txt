@@ -1,13 +1,3 @@
-/*This file contains an example Keyspace that can be created using the
-cassandra-cli command line interface as follows.
-
-bin/cassandra-cli -host localhost --file conf/schema-sample.txt
-
-The cassandra-cli includes online help that explains the statements below. You can
-accessed the help without connecting to a running cassandra instance by starting the
-client and typing "help;"
-*/
-
 create keyspace MessageStore
     with strategy_options=[{replication_factor:1}]
     and placement_strategy = 'org.apache.cassandra.locator.SimpleStrategy';
@@ -16,12 +6,14 @@ use MessageStore;
 
 create column family Stores
     with comparator = UUIDType
-    and default_validation_class = UUIDType
+    and key_validation_class = UUIDType
+    and default_validation_class = UTF8Type
     and rows_cached = 100
     ;
 
 create column family Applications
     with comparator = UTF8Type
+    and key_validation_class = UTF8Type
     and column_metadata = [{
         column_name : queues,
         validation_class : UUIDType

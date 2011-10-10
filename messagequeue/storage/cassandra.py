@@ -33,6 +33,9 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
+import uuid
+import datetime
+
 from zope.interface import implements
 import pycassa
 
@@ -82,4 +85,12 @@ class CassandraQueueBackend(object):
             kwargs['column_start'] = timestamp
         
         results = self.store_fam.get(queue_name, **kwargs)
+        ordered = sorted(results.items(), key=lambda x: (x[0].time, x[0].bytes))
+        if order == 'descending':
+            ordered = ordered.reverse()
+        return ordered
 
+    def push(self, queue_name, message, ttl=60*60*24*3):
+        """Push a message onto the queue"""
+        now = uuid.uuid1()
+        self.store_fam.insert(queue_name, {now: message}, ttl=ttl)
