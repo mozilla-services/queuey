@@ -78,6 +78,7 @@ class MessageQueueBackend(Interface):
     def exists(self, queue_name):
         """Check to see if a queue of a given name exists"""
 
+
 class MetadataBackend(Interface):
     """A Metadata Backend
 
@@ -86,9 +87,9 @@ class MetadataBackend(Interface):
     allocated for each application.
 
     """
-    def __init__(self, username=None, password=None, database='Metadata', 
+    def __init__(self, username=None, password=None, database='MetaData', 
                  host='localhost'):
         """Initialize the backend"""
 
-    def
-
+    def register_application(self, application_name):
+        """Register the application"""
