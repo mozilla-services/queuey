@@ -47,7 +47,7 @@ class MessageQueueBackend(Interface):
         """Retrieve messages from a queue
 
         :param queue_name: Queue name
-        :param type: UUID hex string
+        :param type: string
         :param limit: Amount of messages to retrieve
         :param type: int
         :param timestamp: Retrieve messages starting with this timestamp
@@ -66,7 +66,7 @@ class MessageQueueBackend(Interface):
         exist.
 
         :param queue_name: Queue name
-        :param type: UUID hex string
+        :param type: string
         :param message: Message to add to the queue
         :param type: string
         :param ttl: Time to Live in seconds for the message, after this
@@ -77,3 +77,12 @@ class MessageQueueBackend(Interface):
 
     def exists(self, queue_name):
         """Check to see if a queue of a given name exists"""
+
+class MetadataBackend(Interface):
+    """A Metadata Backend
+
+    Stores associated metadata for the message queue system, such as the
+    active applications registered, and the queues that have been
+    allocated for each application.
+
+    """

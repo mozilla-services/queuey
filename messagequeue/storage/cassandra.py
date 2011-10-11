@@ -74,7 +74,6 @@ class CassandraQueueBackend(object):
     def retrieve(self, queue_name, limit=None, timestamp=None,
                  order="ascending"):
         """Retrieve a message off the queue"""
-        queue_name = uuid.UUID(queue_name).bytes
         kwargs = {}
         if order == 'descending':
             kwargs['column_reversed'] = True
@@ -94,13 +93,11 @@ class CassandraQueueBackend(object):
 
     def push(self, queue_name, message, ttl=60*60*24*3):
         """Push a message onto the queue"""
-        queue_name = uuid.UUID(queue_name).bytes
         now = uuid.uuid1().bytes
         self.store_fam.insert(queue_name, {now: message}, ttl=ttl)
 
     def exists(self, queue_name):
         """Return whether the queue exists or not"""
-        queue_name = uuid.UUID(queue_name).bytes
         try:
             return bool(self.store_fam.get(queue_name, column_count=1))
         except pycassa.NotFoundException as exc:

@@ -6,7 +6,7 @@ use MessageStore;
 
 create column family Stores
     with comparator = UUIDType
-    and key_validation_class = UUIDType
+    and key_validation_class = UTF8Type
     and default_validation_class = UTF8Type
     and rows_cached = 100
     ;
