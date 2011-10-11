@@ -33,7 +33,15 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
-"""MessageQueue Storage Interface"""
+"""MessageQueue Storage Interface
+
+.. note::
+
+    The MetadataBackend and MessageQueueBackend are separate in the event
+    that the message queuing backend is suitable only for messages and
+    not storing the additional application and queue metadata.
+
+"""
 from zope.interface import Interface
 
 class MessageQueueBackend(Interface):
@@ -92,4 +100,20 @@ class MetadataBackend(Interface):
         """Initialize the backend"""
 
     def register_application(self, application_name):
-        """Register the application"""
+        """Register the application
+        
+        If the application is already registered, the ApplicationExists
+        exception must be raised.
+
+        """
+
+    def create_queue(self, application_name, queue_name):
+        """Create a queue for the given application
+
+        Must raise the ApplicationNotRegistered exception if the
+        application is not already registered when adding the queue.
+
+        If a queue_name of this name already exists, then the
+        QueueAlreadyExists exception must be raised.
+
+        """

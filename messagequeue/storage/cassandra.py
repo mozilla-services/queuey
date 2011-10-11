@@ -34,12 +34,16 @@
 #
 # ***** END LICENSE BLOCK *****
 import uuid
-import datetime
+import time
 
-from zope.interface import implements
 import pycassa
+from zope.interface import implements
 
+from messagequeue.exceptions import ApplicationExists
+from messagequeue.exceptions import ApplicationNotRegistered
+from messagequeue.exceptions import QueueAlreadyExists
 from messagequeue.storage import MessageQueueBackend
+from messagequeue.storage import MetadataBackend
 
 def parse_hosts(raw_hosts):
     """Parses out hosts into a list"""
@@ -69,7 +73,6 @@ class CassandraQueueBackend(object):
         hosts = parse_hosts(host)
         self.pool = pool = pycassa.connect(database, hosts)
         self.store_fam = pycassa.ColumnFamily(pool, 'Stores')
-        self.app_fam = pycassa.ColumnFamily(pool, 'Applications')
 
     def retrieve(self, queue_name, limit=None, timestamp=None,
                  order="ascending"):
@@ -102,3 +105,57 @@ class CassandraQueueBackend(object):
             return bool(self.store_fam.get(queue_name, column_count=1))
         except pycassa.NotFoundException as exc:
             return False
+
+
+class CassandraMetadta(object):
+    implements(MetadataBackend)
+
+    def __init__(self, username=None, password=None, database='MessageStore',
+                 host='localhost'):
+        """Create a Cassandra backend for the Message Queue
+
+        :param host: Hostname, accepts either an IP, hostname, hostname:port,
+                     or a comma seperated list of 'hostname:port'
+
+        """
+        hosts = parse_hosts(host)
+        self.row_key = '__APPLICATIONS__'
+        self.pool = pool = pycassa.connect(database, hosts)
+        self.app_fam = pycassa.ColumnFamily(pool, 'Applications')
+
+    def register_application(self, application_name):
+        """Register the application
+        
+        Saves the time the application was registered as well as
+        registering it.
+        
+        """
+        now = str(time.time())
+        try:
+            results = self.app_fam.get(self.row_key,
+                                       columns=[application_name],
+                                       column_count=1)
+            if len(results) > 0:
+                raise ApplicationExists("An application with this name "
+                                        "is already registered: %s" % 
+                                        application_name)
+        except pycassa.NotFoundException as exc:
+            pass
+        self.app_fam.insert(self.row_key, {application_name: now})
+
+    def create_queue(self, application_name, queue_name):
+        """Create a queue"""
+        # Determine if its registered already
+        try:
+            results = self.app_fam.get(self.row_key,
+                                       columns=[application_name],
+                                       column_count=1)
+        except pycassa.NotFoundException as exc:
+            raise ApplicationNotRegistered("%s is not registered" %
+                                           application_name)
+        
+        results = self.app_fam.get(application_name, columns=[queue_name])
+        if len(results) > 0:
+            # Already registered, and queue already exists
+            raise QueueAlreadyExists("%s already exists" % queue_name)                                           
+        self.app_fam.insert(application_name, {application_name: now})
