@@ -107,7 +107,7 @@ class CassandraQueueBackend(object):
             return False
 
 
-class CassandraMetadta(object):
+class CassandraMetadata(object):
     implements(MetadataBackend)
 
     def __init__(self, username=None, password=None, database='MessageStore',
@@ -130,7 +130,6 @@ class CassandraMetadta(object):
         registering it.
         
         """
-        now = str(time.time())
         try:
             results = self.app_fam.get(self.row_key,
                                        columns=[application_name],
@@ -141,21 +140,25 @@ class CassandraMetadta(object):
                                         application_name)
         except pycassa.NotFoundException as exc:
             pass
+        now = str(time.time())
         self.app_fam.insert(self.row_key, {application_name: now})
 
     def create_queue(self, application_name, queue_name):
         """Create a queue"""
         # Determine if its registered already
         try:
-            results = self.app_fam.get(self.row_key,
-                                       columns=[application_name],
-                                       column_count=1)
+            self.app_fam.get(self.row_key, columns=[application_name],
+                             column_count=1)
         except pycassa.NotFoundException as exc:
             raise ApplicationNotRegistered("%s is not registered" %
                                            application_name)
         
-        results = self.app_fam.get(application_name, columns=[queue_name])
-        if len(results) > 0:
-            # Already registered, and queue already exists
-            raise QueueAlreadyExists("%s already exists" % queue_name)                                           
-        self.app_fam.insert(application_name, {application_name: now})
+        try:
+            results = self.app_fam.get(application_name, columns=[queue_name])
+            if len(results) > 0:
+                # Already registered, and queue already exists
+                raise QueueAlreadyExists("%s already exists" % queue_name)                                                           
+        except pycassa.NotFoundException as exc:
+            pass
+        now = str(time.time())
+        self.app_fam.insert(application_name, {queue_name: now})

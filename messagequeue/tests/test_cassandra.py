@@ -2,6 +2,16 @@ import unittest
 import uuid
 import os
 
+from nose.tools import raises
+
+def setup_module():
+    from messagequeue.storage.cassandra import CassandraMetadata
+    host = os.environ.get('TEST_CASSANDRA_HOST', 'localhost')
+    backend = CassandraMetadata(host)
+    backend.app_fam.remove(backend.row_key)
+    backend.app_fam.remove('myapp')
+
+
 class TestCassandraStore(unittest.TestCase):
     def _makeOne(self):
         from messagequeue.storage.cassandra import CassandraQueueBackend
@@ -53,3 +63,46 @@ class TestCassandraStore(unittest.TestCase):
         
         self.assertEqual(False, backend.exists(uuid.uuid4().hex))
         self.assertEqual(True, backend.exists(queue_name))
+
+
+class TestCassandraMetadata(unittest.TestCase):
+    def tearDown(self):
+        backend = self._makeOne()
+        backend.app_fam.remove('myapp')
+        backend.app_fam.remove(backend.row_key)
+
+    def _makeOne(self):
+        from messagequeue.storage.cassandra import CassandraMetadata
+        host = os.environ.get('TEST_CASSANDRA_HOST', 'localhost')
+        return CassandraMetadata(host)
+
+    def test_register_application(self):
+        from messagequeue.exceptions import ApplicationExists
+        backend = self._makeOne()
+        backend.register_application('notifications')
+        
+        # Ensure it works by testing for a raise here
+        @raises(ApplicationExists)
+        def testit():
+            backend.register_application('notifications')
+        testit()
+
+    def test_add_queue(self):
+        from messagequeue.exceptions import QueueAlreadyExists        
+        backend = self._makeOne()
+        backend.register_application('myapp')
+        backend.create_queue('myapp', 'fredrick')
+        
+        # Ensure we get an exception on a repeat
+        @raises(QueueAlreadyExists)
+        def testit():
+            backend.create_queue('myapp', 'fredrick')
+        testit()
+
+    def test_add_queue_not_regged(self):
+        from messagequeue.exceptions import ApplicationNotRegistered
+        backend = self._makeOne()
+        @raises(ApplicationNotRegistered)
+        def testit():
+            backend.create_queue('myapp', 'fredrick')
+        testit()
