@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='MessageQueue',
+    name='queuey',
     version=0.8,
     packages=find_packages(),
 
@@ -17,7 +17,7 @@ setup(
 
     entry_points="""
         [paste.app_factory]
-        main = messagequeue:main
+        main = queuey:main
     """,
 
     test_suite = 'nose.collector',

@@ -1,6 +1,6 @@
 BUILD = build
 BIN = bin
-PROJECT = messagequeue
+PROJECT = queuey
 HERE = `pwd`
 SW = sw
 PIP = $(BIN)/pip install --no-index -f file://$(HERE)/$(SW)
@@ -35,8 +35,8 @@ clean-env:
 $(CASSANDRA):
 	mkdir -p bin
 	cd bin && \
-	curl --silent http://ftp.wayne.edu/apache/cassandra/0.8.6/apache-cassandra-0.8.6-bin.tar.gz | tar -zvx
-	mv bin/apache-cassandra-0.8.6 bin/cassandra
+	curl --silent http://apache.mirrors.pair.com//cassandra/0.8.7/apache-cassandra-0.8.7-bin.tar.gz | tar -zvx
+	mv bin/apache-cassandra-0.8.7 bin/cassandra
 	cp etc/cassandra/cassandra.yaml bin/cassandra/conf/cassandra.yaml
 	cp etc/cassandra/log4j-server.properties bin/cassandra/conf/log4j-server.properties
 	cd bin/cassandra/lib && \
@@ -48,4 +48,4 @@ clean-cassandra:
 clean:	clean-cassandra clean-env 
 
 test: 
-	$(NOSE) messagequeue
+	$(NOSE) queuey

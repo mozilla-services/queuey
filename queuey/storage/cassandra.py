@@ -39,11 +39,11 @@ import time
 import pycassa
 from zope.interface import implements
 
-from messagequeue.exceptions import ApplicationExists
-from messagequeue.exceptions import ApplicationNotRegistered
-from messagequeue.exceptions import QueueAlreadyExists
-from messagequeue.storage import MessageQueueBackend
-from messagequeue.storage import MetadataBackend
+from queuey.exceptions import ApplicationExists
+from queuey.exceptions import ApplicationNotRegistered
+from queuey.exceptions import QueueAlreadyExists
+from queuey.storage import MessageQueueBackend
+from queuey.storage import MetadataBackend
 
 def parse_hosts(raw_hosts):
     """Parses out hosts into a list"""

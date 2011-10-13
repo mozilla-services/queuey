@@ -5,7 +5,7 @@ import os
 from nose.tools import raises
 
 def setup_module():
-    from messagequeue.storage.cassandra import CassandraMetadata
+    from queuey.storage.cassandra import CassandraMetadata
     host = os.environ.get('TEST_CASSANDRA_HOST', 'localhost')
     backend = CassandraMetadata(host)
     backend.app_fam.remove(backend.row_key)
@@ -14,12 +14,12 @@ def setup_module():
 
 class TestCassandraStore(unittest.TestCase):
     def _makeOne(self):
-        from messagequeue.storage.cassandra import CassandraQueueBackend
+        from queuey.storage.cassandra import CassandraQueueBackend
         host = os.environ.get('TEST_CASSANDRA_HOST', 'localhost')
         return CassandraQueueBackend(host)
     
     def test_parsehosts(self):
-        from messagequeue.storage.cassandra import parse_hosts
+        from queuey.storage.cassandra import parse_hosts
         hosts = parse_hosts('localhost')
         self.assertEqual(hosts, ['localhost:9160'])
         
@@ -72,12 +72,12 @@ class TestCassandraMetadata(unittest.TestCase):
         backend.app_fam.remove(backend.row_key)
 
     def _makeOne(self):
-        from messagequeue.storage.cassandra import CassandraMetadata
+        from queuey.storage.cassandra import CassandraMetadata
         host = os.environ.get('TEST_CASSANDRA_HOST', 'localhost')
         return CassandraMetadata(host)
 
     def test_register_application(self):
-        from messagequeue.exceptions import ApplicationExists
+        from queuey.exceptions import ApplicationExists
         backend = self._makeOne()
         backend.register_application('notifications')
         
@@ -88,7 +88,7 @@ class TestCassandraMetadata(unittest.TestCase):
         testit()
 
     def test_add_queue(self):
-        from messagequeue.exceptions import QueueAlreadyExists        
+        from queuey.exceptions import QueueAlreadyExists        
         backend = self._makeOne()
         backend.register_application('myapp')
         backend.create_queue('myapp', 'fredrick')
@@ -100,7 +100,7 @@ class TestCassandraMetadata(unittest.TestCase):
         testit()
 
     def test_add_queue_not_regged(self):
-        from messagequeue.exceptions import ApplicationNotRegistered
+        from queuey.exceptions import ApplicationNotRegistered
         backend = self._makeOne()
         @raises(ApplicationNotRegistered)
         def testit():
