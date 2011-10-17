@@ -5,27 +5,27 @@ HERE = `pwd`
 SW = sw
 PIP = $(BIN)/pip install --no-index -f file://$(HERE)/$(SW)
 VIRTUALENV = virtualenv
-PYTHON = bin/python
-EZ = bin/easy_install
-NOSE = bin/nosetests -s --with-xunit
-CASSANDRA = bin/cassandra/bin/cassandra
+PYTHON = $(BIN)/python
+EZ = $(BIN)/easy_install
+NOSE = $(BIN)/nosetests -s --with-xunit
+CASSANDRA = $(BIN)/cassandra/bin/cassandra
 BUILD_DIRS = bin build deps include lib lib64
 
 .PHONY:	all clean-env setup clean test clean-cassandra $(PROJECT)
 
-all: $(PROJECT) $(CASSANDRA)
+all: $(BIN)/paster $(CASSANDRA)
 
 $(BIN)/python:
-	$(VIRTUALENV) --no-site-packages --distribute .
+	python $(SW)/virtualenv.py --no-site-packages --distribute .
+	rm distribute-0.6.19.tar.gz
 	$(BIN)/pip install $(SW)/pip-1.0.2.tar.gz
 
 $(BIN)/pip: $(BIN)/python
 
 $(BIN)/paster: lib $(BIN)/pip
 	$(PIP) -r requirements.txt
-
-$(PROJECT): $(BIN)/paster
 	$(PYTHON) setup.py develop
+
 
 lib: $(BIN)/python
 
