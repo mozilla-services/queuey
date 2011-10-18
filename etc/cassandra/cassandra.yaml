@@ -21,14 +21,6 @@ cluster_name: 'Test Cluster'
 # a random token, which will lead to hot spots.
 initial_token:
 
-# Set to true to make new [non-seed] nodes automatically migrate data
-# to themselves from the pre-existing nodes in the cluster.  Defaults
-# to false because you can only bootstrap N machines at a time from
-# an existing cluster of N, so if you are bringing up a cluster of
-# 10 machines with 3 seeds you would have to do it in stages.  Leaving
-# this off for the initial start simplifies that.
-auto_bootstrap: false
-
 # See http://wiki.apache.org/cassandra/HintedHandoff
 hinted_handoff_enabled: true
 # this defines the maximum amount of time a dead host will have hints
@@ -77,9 +69,6 @@ commitlog_directory: cassandra/commitlog
 # saved caches
 saved_caches_directory: cassandra/saved_caches
 
-# Size to allow commitlog to grow to before creating a new segment 
-commitlog_rotation_threshold_in_mb: 128
-
 # commitlog_sync may be either "periodic" or "batch." 
 # When in batch mode, Cassandra won't ack writes until the commit log
 # has been fsynced to disk.  It will wait up to
@@ -95,8 +84,8 @@ commitlog_rotation_threshold_in_mb: 128
 commitlog_sync: periodic
 commitlog_sync_period_in_ms: 10000
 
-# any class that implements the SeedProvider interface and has a constructor that takes a Map<String, String> of
-# parameters will do.
+# any class that implements the SeedProvider interface and has a
+# constructor that takes a Map<String, String> of parameters will do.
 seed_provider:
     # Addresses of hosts that are deemed contact points. 
     # Cassandra nodes use this list of hosts to find each other and learn
@@ -146,11 +135,15 @@ concurrent_reads: 32
 concurrent_writes: 32
 
 # Total memory to use for memtables.  Cassandra will flush the largest
-# memtable when this much memory is used.  Prefer using this to
-# the older, per-ColumnFamily memtable flush thresholds.
+# memtable when this much memory is used.
 # If omitted, Cassandra will set it to 1/3 of the heap.
-# If set to 0, only the old flush thresholds are used.
 # memtable_total_space_in_mb: 2048
+
+# Total space to use for commitlogs. 
+# If space gets above this value (it will round up to the next nearest
+# segment multiple), Cassandra will flush every dirty CF in the oldest
+# segment and remove it.
+# commitlog_total_space_in_mb: 4096
 
 # This sets the amount of memtable flush writer threads.  These will
 # be blocked by disk io, and each one will hold a memtable in memory
@@ -183,6 +176,10 @@ storage_port: 7000
 # Setting this to 0.0.0.0 is always wrong.
 listen_address: localhost
 
+# Address to broadcast to other Cassandra nodes
+# Leaving this blank will set it to the same value as listen_address
+# broadcast_address: 1.2.3.4
+
 # The address to bind the Thrift RPC service to -- clients connect
 # here. Unlike ListenAddress above, you *can* specify 0.0.0.0 here if
 # you want Thrift to listen on all interfaces.
@@ -196,35 +193,36 @@ rpc_port: 9160
 # enable or disable keepalive on rpc connections
 rpc_keepalive: true
 
-# Cassandra provides you with a variety of options for RPC Server
-# sync  -> Creates one thread per connection but with a configurable number of
-#           threads.  This can be expensive in memory used for thread stack for
-#           a large enough number of clients.  (Hence, connection pooling is
-#           very, very strongly recommended.)
+# Cassandra provides three options for the RPC Server:
+#
+# sync  -> One connection per thread in the rpc pool (see below).
+#          For a very large number of clients, memory will be your limiting
+#          factor; on a 64 bit JVM, 128KB is the minimum stack size per thread.
+#          Connection pooling is very, very strongly recommended.
 #
 # async -> Nonblocking server implementation with one thread to serve 
-#           rpc connections.  This is not recommended for high throughput use
-#           cases.
+#          rpc connections.  This is not recommended for high throughput use
+#          cases. Async has been tested to be about 50% slower than sync
+#          or hsha and is deprecated: it will be removed in the next major release.
 #
-# hsha  -> half sync and half async implementation with configurable number
-#           of worker threads (For managing connections).  IO Management is
-#           done by a set of threads currently equal to the number of
-#           processors in the system. The number of threads in the threadpool
-#           is configured via rpc_min_threads and rpc_max_threads.  (Connection
-#           pooling is strongly recommended in this case too.) 
-
+# hsha  -> Stands for "half synchronous, half asynchronous." The rpc thread pool 
+#          (see below) is used to manage requests, but the threads are multiplexed
+#          across the different clients.
+#
+# The default is sync because on Windows hsha is about 30% slower.  On Linux,
+# sync/hsha performance is about the same, with hsha of course using less memory.
 rpc_server_type: sync
 
 # Uncomment rpc_min|max|thread to set request pool size.
 # You would primarily set max for the sync server to safeguard against
 # misbehaved clients; if you do hit the max, Cassandra will block until one
-# disconnects before accepting more.  The defaults are min of 16 and max
+# disconnects before accepting more.  The defaults for sync are min of 16 and max
 # unlimited.
 # 
-# For the Hsha server, you would set the max so that a fair amount of resources
-# are provided to the other working threads on the server.
+# For the Hsha server, the min and max both default to quadruple the number of
+# CPU cores.
 #
-# This configuration is not used for the async server.
+# This configuration is ignored by the async server.
 #
 # rpc_min_threads: 16
 # rpc_max_threads: 2048
@@ -254,10 +252,6 @@ incremental_backups: false
 # is a data format change.
 snapshot_before_compaction: false
 
-# change this to increase the compaction thread's priority.  In java, 1 is the
-# lowest priority and that is our default.  The highest allowed is 5.
-# compaction_thread_priority: 1
-
 # Add column indexes to a row after its contents reach this size.
 # Increase if your column values are large, or if you have a very large
 # number of columns.  The competing causes are, Cassandra has to
@@ -273,16 +267,26 @@ column_index_size_in_kb: 64
 in_memory_compaction_limit_in_mb: 64
 
 # Number of simultaneous compactions to allow, NOT including
-# validation "compactions" for anti-entropy repair. This defaults to
-# the number of cores. This can help preserve read performance in a
-# mixed read/write workload, by mitigating the tendency of small
-# sstables to accumulate during a single long running compactions. The
-# default is usually fine and if you experience problems with
-# compaction running too slowly or too fast, you should look at
+# validation "compactions" for anti-entropy repair.  Simultaneous
+# compactions can help preserve read performance in a mixed read/write
+# workload, by mitigating the tendency of small sstables to accumulate
+# during a single long running compactions. The default is usually
+# fine and if you experience problems with compaction running too
+# slowly or too fast, you should look at
 # compaction_throughput_mb_per_sec first.
 #
-# Uncomment to make compaction mono-threaded.
+# This setting has no effect on LeveledCompactionStrategy.
+#
+# concurrent_compactors defaults to the number of cores.
+# Uncomment to make compaction mono-threaded, the pre-0.8 default.
 #concurrent_compactors: 1
+
+# Multi-threaded compaction. When enabled, each compaction will use
+# up to one thread per core, plus one thread per sstable being merged.
+# This is usually only useful for SSD-based hardware: otherwise, 
+# your concern is usually to get compaction to do LESS i/o (see:
+# compaction_throughput_mb_per_sec), not more.
+multithreaded_compaction: false
 
 # Throttles compaction to the given total throughput across the entire
 # system. The faster you insert data, the faster you need to compact in
@@ -296,6 +300,13 @@ compaction_throughput_mb_per_sec: 16
 # positions in the compacted sstable.  Disable if you use really large
 # key caches.
 compaction_preheat_key_cache: true
+
+# Throttles all outbound streaming file transfers on this node to the
+# given total throughput in Mbps. This is necessary because Cassandra does
+# mostly sequential IO when streaming data during bootstrap or repair, which
+# can lead to saturating the network connection and degrading rpc performance.
+# When unset, the default is 400 Mbps or 50 MB/s.
+# stream_throughput_outbound_megabits_per_sec: 400
 
 # Time to wait for a reply from other nodes before failing the command 
 rpc_timeout_in_ms: 10000
@@ -320,11 +331,6 @@ rpc_timeout_in_ms: 10000
 #    explicitly configured in cassandra-topology.properties.
 endpoint_snitch: org.apache.cassandra.locator.SimpleSnitch
 
-# dynamic_snitch -- This boolean controls whether the above snitch is
-# wrapped with a dynamic snitch, which will monitor read latencies
-# and avoid reading from hosts that have slowed (due to compaction,
-# for instance)
-dynamic_snitch: true
 # controls how often to perform the more expensive part of host score
 # calculation
 dynamic_snitch_update_interval_in_ms: 100 
@@ -338,7 +344,7 @@ dynamic_snitch_reset_interval_in_ms: 600000
 # expressed as a double which represents a percentage.  Thus, a value of
 # 0.2 means Cassandra would continue to prefer the static snitch values
 # until the pinned host was 20% worse than the fastest.
-dynamic_snitch_badness_threshold: 0.0
+dynamic_snitch_badness_threshold: 0.1
 
 # request_scheduler -- Set this to a class that implements
 # RequestScheduler, which will schedule incoming client requests

@@ -35,8 +35,8 @@ clean-env:
 $(CASSANDRA):
 	mkdir -p bin
 	cd bin && \
-	curl --silent http://apache.mirrors.pair.com//cassandra/0.8.7/apache-cassandra-0.8.7-bin.tar.gz | tar -zvx
-	mv bin/apache-cassandra-0.8.7 bin/cassandra
+	curl --silent http://newverhost.com/pub/cassandra/1.0.0/apache-cassandra-1.0.0-bin.tar.gz | tar -zvx
+	mv bin/apache-cassandra-1.0.0 bin/cassandra
 	cp etc/cassandra/cassandra.yaml bin/cassandra/conf/cassandra.yaml
 	cp etc/cassandra/log4j-server.properties bin/cassandra/conf/log4j-server.properties
 	cd bin/cassandra/lib && \
