@@ -42,7 +42,22 @@
     not storing the additional application and queue metadata.
 
 """
+from pyramid.util import DottedNameResolver
 from zope.interface import Interface
+
+dotted_resolver = DottedNameResolver(None)
+
+
+def configure_from_settings(object_name, settings):
+    """Given a settings dict, create the storage instance and return it"""
+    config = {}
+    prefix = object_name + '.'
+    for name, value in settings:
+        if name.startswith(prefix):
+            config[name] = value.lstrip(prefix)
+    klass = dotted_resolver.resolve(settings.pop('class'))
+    return klass(**config)
+
 
 class MessageQueueBackend(Interface):
     """A MessageQueue Backend"""

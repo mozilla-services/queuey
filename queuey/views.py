@@ -33,15 +33,39 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
+from cornice.service import Service
+
+# Services
+message_queue = Service(name='message_queues', path='/queue/')
+queues = Service(name='queues', path='/queue/{queue_name}/')
+
+
+@message_queue.post(permission='create_create')
 def new_queue(request):
-    pass
+    """Create a new queue
+    
+    
+    """
+    
 
+
+@queues.delete(permission='delete_queue')
 def delete_queue(request):
-    pass
+    """Delete a queue
+    
+    """
 
-def clear_queue(request):
-    pass
 
-def add_message(request):
-    pass
+@queues.post(permission='new_message')
+def new_message(request):
+    """Post a message to a queue
+    
+    """
+
+
+@queues.get()
+def get_messages(request):
+    """Get messages from a queue
+    
+    """
 

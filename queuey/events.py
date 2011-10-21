@@ -33,17 +33,3 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
-from pyramid.config import Configurator
-
-from queuey.storage import configure_from_settings
-
-
-def main(global_config, **settings):
-    """ This function returns a Pyramid WSGI application."""
-    config = Configurator(settings=settings)
-    config.include('cornice')
-    config.registry['backend_storage'] = configure_from_settings(
-        'storage', settings)
-    config.registry['backend_metadata'] = configure_from_settings(
-        'metadata', settings)
-    return config.make_wsgi_app()

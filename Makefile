@@ -11,14 +11,21 @@ NOSE = $(BIN)/nosetests -s --with-xunit
 CASSANDRA = $(BIN)/cassandra/bin/cassandra
 BUILD_DIRS = bin build deps include lib lib64
 
-.PHONY:	all clean-env setup clean test clean-cassandra $(PROJECT)
+.PHONY:	all clean-env cornice setup clean test clean-cassandra $(PROJECT)
 
-all: $(BIN)/paster $(CASSANDRA)
+all: $(BIN)/paster cornice $(CASSANDRA)
 
 $(BIN)/python:
 	python $(SW)/virtualenv.py --no-site-packages --distribute .
 	rm distribute-0.6.19.tar.gz
 	$(BIN)/pip install $(SW)/pip-1.0.2.tar.gz
+
+cornice:
+	mkdir -p deps
+	cd deps && git clone git@github.com:mozilla-services/cornice.git
+	$(PYTHON) deps/cornice/setup.py develop
+	cd deps && git clone git@github.com:mozilla-services/pyramid_ipauth.git
+	$(PYTHON) deps/pyramid_ipauth/setup.py develop
 
 $(BIN)/pip: $(BIN)/python
 

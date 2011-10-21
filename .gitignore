@@ -16,3 +16,4 @@ man/
 include/
 cassandra.pid
 cassandra
+deps
