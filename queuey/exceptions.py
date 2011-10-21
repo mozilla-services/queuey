@@ -54,3 +54,8 @@ class ApplicationNotRegistered(StorageException):
 class QueueAlreadyExists(StorageException):
     """Raised when a queue already exists and an action tries to
     create it"""
+
+
+class QueueDoesNotExist(StorageException):
+	"""Raised when a queue does not exist and an action tries to
+	act on it"""

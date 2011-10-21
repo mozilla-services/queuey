@@ -33,7 +33,12 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
+import uuid
+
 from cornice.service import Service
+from pyramid.httpexceptions import HTTPBadRequest
+from pyramid.response import Response
+import simplejson as json
 
 # Services
 message_queue = Service(name='message_queues', path='/queue/')
@@ -42,30 +47,75 @@ queues = Service(name='queues', path='/queue/{queue_name}/')
 
 @message_queue.post(permission='create_queue')
 def new_queue(request):
-    """Create a new queue
-    
-    
-    """
-    
+    """Create a new queue"""
+    app_key  = _extract_app_key(request.headers)
+    meta = request.registry['backend_metadata']
+    queue_name = uuid.uuid4().hex
+    meta.register_queue(app_key, queue_name)
+    return {'status': 'ok', 'queue_name': queue_name}
 
 
 @queues.delete(permission='delete_queue')
 def delete_queue(request):
-    """Delete a queue
-    
-    """
+    """Delete a queues"""
+    app_key, queue_name = _extract_app_queue_info(request)
+    meta = request.registry['backend_metadata']
+    meta.remove_queue(app_key, queue_name)
+    return {'status': 'ok'}
 
 
 @queues.post(permission='new_message')
 def new_message(request):
-    """Post a message to a queue
-    
-    """
-
+    """Post a message to a queue"""
+    app_key, queue_name = _extract_app_queue_info(request)
+    if not request.body:
+    	raise HTTPBadRequest("Failure to provide message body.")
+    try:
+    	body = json.loads(request.body)
+    except json.decoder.JSONDecodeError:
+    	raise HTTPBadRequest("Invalid JSON content submitted.")
+    storage = request.registry['backend_storage']
+    storage.push(queue_name, request.body)
 
 @queues.get()
 def get_messages(request):
-    """Get messages from a queue
-    
-    """
+    """Get messages from a queue"""
+    queue_name = _extract_queue_name(request)
+    limit = request.GET.get('limit')
+    timestamp = request.GET.get('since_timestamp')
+    order = request.GET.get('order', 'ascending')
+	storage = request.registry['backend_storage']
+
+	# Retrieve and fixup the structure, avoid deserializing the
+	# JSON content from the db
+	messages = storage.retrieve(queue_name, limit, timestamp, order)
+	message_data = [{'key': key.hex, 'body': key.hex + 'MARKER'}
+					for key, body in messages]
+	envelope = json.dumps({'status': 'ok', 'messages': message_data})
+	for key, body in messages:
+		envelope.replace(key.hex + 'MARKER', body)
+	return Response(body=envelope, content_type='application/json')
+
+
+## Utility extraction methods
+
+def _extract_app_key(headers):
+    app_key = headers.get('ApplicationKey')
+    if not app_key:
+    	raise HTTPBadRequest("Failure to provide ApplicationKey")
+	return app_key
+
+
+def _extract_queue_name(request):
+	app_key = headers.get('ApplicationKey')
+	queue_name = request.POST.get('queue_name')
+    if not queue_name:
+    	raise HTTPBadRequest("Failure to provide queue_name")
+    return queue_name
+
+
+def _extract_app_queue_info(request):
+	app_key, queue_name = _extract_app_key(request.headers), \
+		_extract_queue_name(request)
+	return app_key, queue_name
 

@@ -106,6 +106,13 @@ class CassandraQueueBackend(object):
         except pycassa.NotFoundException as exc:
             return False
 
+    def truncate(self, queue_name):
+        """Remove all contents of the queue"""
+        try:
+            self.store_fam.remove(queue_name)
+        except pycassa.NotFoundException as exc:
+            pass
+
 
 class CassandraMetadata(object):
     implements(MetadataBackend)
@@ -143,8 +150,8 @@ class CassandraMetadata(object):
         now = str(time.time())
         self.app_fam.insert(self.row_key, {application_name: now})
 
-    def create_queue(self, application_name, queue_name):
-        """Create a queue"""
+    def register_queue(self, application_name, queue_name):
+        """Register a queue"""
         # Determine if its registered already
         try:
             self.app_fam.get(self.row_key, columns=[application_name],

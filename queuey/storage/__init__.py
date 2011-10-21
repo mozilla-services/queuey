@@ -100,6 +100,9 @@ class MessageQueueBackend(Interface):
 
     def exists(self, queue_name):
         """Check to see if a queue of a given name exists"""
+    
+    def truncate(self, queue_name):
+        """Remove all contents of the queue"""
 
 
 class MetadataBackend(Interface):
@@ -122,8 +125,8 @@ class MetadataBackend(Interface):
 
         """
 
-    def create_queue(self, application_name, queue_name):
-        """Create a queue for the given application
+    def register_queue(self, application_name, queue_name):
+        """Register a queue for the given application
 
         Must raise the ApplicationNotRegistered exception if the
         application is not already registered when adding the queue.
@@ -132,3 +135,12 @@ class MetadataBackend(Interface):
         QueueAlreadyExists exception must be raised.
 
         """
+
+    def remove_queue(self, application_name, queue_name):
+        """Remove a queue registration for the given application
+
+        Must raise the ApplicationNotRegistered exception if the
+        application is not already registered when deleting the queue.
+
+        If a queue_name of this name does not exist, then the
+        QueueDoesNotExist exception must be raised.
