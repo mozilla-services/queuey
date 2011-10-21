@@ -40,7 +40,7 @@ message_queue = Service(name='message_queues', path='/queue/')
 queues = Service(name='queues', path='/queue/{queue_name}/')
 
 
-@message_queue.post(permission='create_create')
+@message_queue.post(permission='create_queue')
 def new_queue(request):
     """Create a new queue
     

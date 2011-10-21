@@ -33,17 +33,42 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
+import os
+
 from pyramid.config import Configurator
 
+from mozsvc.config import Config
+
+from queuey.resources import Root
 from queuey.storage import configure_from_settings
 
 
 def main(global_config, **settings):
-    """ This function returns a Pyramid WSGI application."""
-    config = Configurator(settings=settings)
-    config.include('cornice')
+    config_file = global_config['__file__']
+    config_file = os.path.abspath(
+                    os.path.normpath(
+                    os.path.expandvars(
+                        os.path.expanduser(
+                        config_file))))
+
+    settings['config'] = config = Config(config_file)
+    conf_dir, _ = os.path.split(config_file)
+
+    config = Configurator(root_factory=Root, settings=settings)
+
     config.registry['backend_storage'] = configure_from_settings(
         'storage', settings)
     config.registry['backend_metadata'] = configure_from_settings(
         'metadata', settings)
+
+    # adds cornice
+    config.include("cornice")
+
+    # adds Mozilla default views
+    config.include("mozsvc")
+    
+    # adds ip auth
+    config.include('pyramid_ipauth')
+
+    config.scan('queuey.views')
     return config.make_wsgi_app()
