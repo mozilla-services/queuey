@@ -33,6 +33,7 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
+from datetime import datetime
 import uuid
 
 from cornice.service import Service
@@ -81,11 +82,30 @@ def new_message(request):
 def get_messages(request):
     """Get messages from a queue"""
     queue_name = _extract_queue_name(request)
-    limit = request.GET.get('limit')
-    timestamp = request.GET.get('since_timestamp')
-    order = request.GET.get('order', 'ascending')
-	storage = request.registry['backend_storage']
+	
+	limit = request.GET.get('limit')
+	if limit:
+		try:
+			limit = int(limit)
+		except ValueError:
+			raise HTTPBadRequest("Invalid limit param provided")
+	
+    order = request.GET.get('order')
+    if order and order not in ['ascending', 'descending']:
+    	raise HTTPBadRequest("Invalid order param provided")
 
+    timestamp = request.GET.get('since_timestamp')
+	if timestamp:
+		try:
+			timestamp = int(timestamp)
+		except ValueError:
+			raise HTTPBadRequest("Timestamp parameter must be an integer")
+		try:
+			timestamp = datetime.utcfromtimestamp(timestamp)
+		except ValueError:
+			raise HTTPBadRequest("Timestamp parameter is invalid")
+
+	storage = request.registry['backend_storage']
 	# Retrieve and fixup the structure, avoid deserializing the
 	# JSON content from the db
 	messages = storage.retrieve(queue_name, limit, timestamp, order)
