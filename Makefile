@@ -1,7 +1,7 @@
 BUILD = build
-BIN = bin
 PROJECT = queuey
-HERE = `pwd`
+HERE = $(shell pwd)
+BIN = $(HERE)/bin
 SW = sw
 PIP = $(BIN)/pip install --no-index -f file://$(HERE)/$(SW)
 VIRTUALENV = virtualenv
@@ -9,23 +9,29 @@ PYTHON = $(BIN)/python
 EZ = $(BIN)/easy_install
 NOSE = $(BIN)/nosetests -s --with-xunit
 CASSANDRA = $(BIN)/cassandra/bin/cassandra
+DEPS = mozservices pyramid_ipauth cornice  
 BUILD_DIRS = bin build deps include lib lib64
 
 .PHONY:	all clean-env cornice setup clean test clean-cassandra $(PROJECT)
 
-all: $(BIN)/paster cornice $(CASSANDRA)
+all: $(BIN)/paster deps $(CASSANDRA)
 
 $(BIN)/python:
 	python $(SW)/virtualenv.py --no-site-packages --distribute .
 	rm distribute-0.6.19.tar.gz
 	$(BIN)/pip install $(SW)/pip-1.0.2.tar.gz
 
-cornice:
+deps: $(BIN)/python
 	mkdir -p deps
-	cd deps && git clone git@github.com:mozilla-services/cornice.git
-	$(PYTHON) deps/cornice/setup.py develop
-	cd deps && git clone git@github.com:mozilla-services/pyramid_ipauth.git
-	$(PYTHON) deps/pyramid_ipauth/setup.py develop
+	for dep in $(DEPS) ; do \
+		test -d deps/$$dep || (\
+			cd deps && git clone git@github.com:mozilla-services/$$dep.git; \
+			cd $(HERE)); \
+		cd deps/$$dep; \
+		git pull; \
+		$(PYTHON) setup.py develop; \
+		cd $(HERE); \
+	done
 
 $(BIN)/pip: $(BIN)/python
 
