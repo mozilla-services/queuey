@@ -52,10 +52,12 @@ def configure_from_settings(object_name, settings):
     """Given a settings dict, create the storage instance and return it"""
     config = {}
     prefix = object_name + '.'
-    for name, value in settings:
+    for name, value in settings.iteritems():
         if name.startswith(prefix):
             config[name] = value.lstrip(prefix)
-    klass = dotted_resolver.resolve(settings.pop('class'))
+        else:
+            config[name] = value
+    klass = dotted_resolver.resolve(config.pop('backend'))
     return klass(**config)
 
 
@@ -144,3 +146,5 @@ class MetadataBackend(Interface):
 
         If a queue_name of this name does not exist, then the
         QueueDoesNotExist exception must be raised.
+
+        """

@@ -51,15 +51,15 @@ def main(global_config, **settings):
                         os.path.expanduser(
                         config_file))))
 
-    settings['config'] = config = Config(config_file)
+    settings['config'] = Config(config_file)
     conf_dir, _ = os.path.split(config_file)
 
     config = Configurator(root_factory=Root, settings=settings)
 
     config.registry['backend_storage'] = configure_from_settings(
-        'storage', settings)
+        'storage', settings['config'].get_map('storage'))
     config.registry['backend_metadata'] = configure_from_settings(
-        'metadata', settings)
+        'metadata', settings['config'].get_map('metadata'))
 
     # adds cornice
     config.include("cornice")

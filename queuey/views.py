@@ -70,11 +70,11 @@ def new_message(request):
     """Post a message to a queue"""
     app_key, queue_name = _extract_app_queue_info(request)
     if not request.body:
-    	raise HTTPBadRequest("Failure to provide message body.")
+        raise HTTPBadRequest("Failure to provide message body.")
     try:
-    	body = json.loads(request.body)
+        body = json.loads(request.body)
     except json.decoder.JSONDecodeError:
-    	raise HTTPBadRequest("Invalid JSON content submitted.")
+        raise HTTPBadRequest("Invalid JSON content submitted.")
     storage = request.registry['backend_storage']
     storage.push(queue_name, request.body)
 
@@ -82,39 +82,39 @@ def new_message(request):
 def get_messages(request):
     """Get messages from a queue"""
     queue_name = _extract_queue_name(request)
-	
-	limit = request.GET.get('limit')
-	if limit:
-		try:
-			limit = int(limit)
-		except ValueError:
-			raise HTTPBadRequest("Invalid limit param provided")
-	
+    
+    limit = request.GET.get('limit')
+    if limit:
+        try:
+            limit = int(limit)
+        except ValueError:
+            raise HTTPBadRequest("Invalid limit param provided")
+    
     order = request.GET.get('order')
     if order and order not in ['ascending', 'descending']:
-    	raise HTTPBadRequest("Invalid order param provided")
+        raise HTTPBadRequest("Invalid order param provided")
 
     timestamp = request.GET.get('since_timestamp')
-	if timestamp:
-		try:
-			timestamp = int(timestamp)
-		except ValueError:
-			raise HTTPBadRequest("Timestamp parameter must be an integer")
-		try:
-			timestamp = datetime.utcfromtimestamp(timestamp)
-		except ValueError:
-			raise HTTPBadRequest("Timestamp parameter is invalid")
+    if timestamp:
+        try:
+            timestamp = int(timestamp)
+        except ValueError:
+            raise HTTPBadRequest("Timestamp parameter must be an integer")
+        try:
+            timestamp = datetime.utcfromtimestamp(timestamp)
+        except ValueError:
+            raise HTTPBadRequest("Timestamp parameter is invalid")
 
-	storage = request.registry['backend_storage']
-	# Retrieve and fixup the structure, avoid deserializing the
-	# JSON content from the db
-	messages = storage.retrieve(queue_name, limit, timestamp, order)
-	message_data = [{'key': key.hex, 'body': key.hex + 'MARKER'}
-					for key, body in messages]
-	envelope = json.dumps({'status': 'ok', 'messages': message_data})
-	for key, body in messages:
-		envelope.replace(key.hex + 'MARKER', body)
-	return Response(body=envelope, content_type='application/json')
+    storage = request.registry['backend_storage']
+    # Retrieve and fixup the structure, avoid deserializing the
+    # JSON content from the db
+    messages = storage.retrieve(queue_name, limit, timestamp, order)
+    message_data = [{'key': key.hex, 'body': key.hex + 'MARKER'}
+                    for key, body in messages]
+    envelope = json.dumps({'status': 'ok', 'messages': message_data})
+    for key, body in messages:
+        envelope.replace(key.hex + 'MARKER', body)
+    return Response(body=envelope, content_type='application/json')
 
 
 ## Utility extraction methods
@@ -122,20 +122,20 @@ def get_messages(request):
 def _extract_app_key(headers):
     app_key = headers.get('ApplicationKey')
     if not app_key:
-    	raise HTTPBadRequest("Failure to provide ApplicationKey")
-	return app_key
+        raise HTTPBadRequest("Failure to provide ApplicationKey")
+    return app_key
 
 
 def _extract_queue_name(request):
-	app_key = headers.get('ApplicationKey')
-	queue_name = request.POST.get('queue_name')
+    app_key = headers.get('ApplicationKey')
+    queue_name = request.POST.get('queue_name')
     if not queue_name:
-    	raise HTTPBadRequest("Failure to provide queue_name")
+        raise HTTPBadRequest("Failure to provide queue_name")
     return queue_name
 
 
 def _extract_app_queue_info(request):
-	app_key, queue_name = _extract_app_key(request.headers), \
-		_extract_queue_name(request)
-	return app_key, queue_name
+    app_key, queue_name = _extract_app_key(request.headers), \
+        _extract_queue_name(request)
+    return app_key, queue_name
 
