@@ -50,10 +50,10 @@ class TestCassandraStore(unittest.TestCase):
         backend.push(queue_name, another)
         existing = backend.retrieve(queue_name)
         self.assertEqual(2, len(existing))
-        self.assertEqual(existing[0][1], payload)
+        self.assertEqual(existing[1][1], payload)
         
-        existing = backend.retrieve(queue_name, order='descending')
-        self.assertEqual(existing[0][1], another)
+        existing = backend.retrieve(queue_name, order='ascending')
+        self.assertEqual(existing[1][1], another)
 
     def test_noqueue(self):
         backend = self._makeOne()
@@ -76,6 +76,11 @@ class TestCassandraMetadata(unittest.TestCase):
         host = os.environ.get('TEST_CASSANDRA_HOST', 'localhost')
         return CassandraMetadata(host)
 
+    def _makeQB(self):
+        from queuey.storage.cassandra import CassandraQueueBackend
+        host = os.environ.get('TEST_CASSANDRA_HOST', 'localhost')
+        return CassandraQueueBackend(host)
+
     def test_register_application(self):
         from queuey.exceptions import ApplicationExists
         backend = self._makeOne()
@@ -90,13 +95,14 @@ class TestCassandraMetadata(unittest.TestCase):
     def test_add_queue(self):
         from queuey.exceptions import QueueAlreadyExists        
         backend = self._makeOne()
+        store = self._makeQB()
         backend.register_application('myapp')
-        backend.create_queue('myapp', 'fredrick')
+        backend.register_queue('myapp', 'fredrick')
         
         # Ensure we get an exception on a repeat
         @raises(QueueAlreadyExists)
         def testit():
-            backend.create_queue('myapp', 'fredrick')
+            backend.register_queue('myapp', 'fredrick')
         testit()
 
     def test_add_queue_not_regged(self):
@@ -104,5 +110,5 @@ class TestCassandraMetadata(unittest.TestCase):
         backend = self._makeOne()
         @raises(ApplicationNotRegistered)
         def testit():
-            backend.create_queue('myapp', 'fredrick')
+            backend.register_queue('myapp', 'fredrick')
         testit()
