@@ -75,7 +75,7 @@ class CassandraQueueBackend(object):
         self.store_fam = pycassa.ColumnFamily(pool, 'Stores')
 
     def retrieve(self, queue_name, limit=None, timestamp=None,
-                 order="ascending"):
+                 order="descending"):
         """Retrieve a message off the queue"""
         kwargs = {}
         if order == 'descending':

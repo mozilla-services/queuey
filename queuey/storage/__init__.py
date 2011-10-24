@@ -68,7 +68,7 @@ class MessageQueueBackend(Interface):
         """Initialize the backend"""
 
     def retrieve(self, queue_name, limit=None, timestamp=None,
-                 order="ascending"):
+                 order="descending"):
         """Retrieve messages from a queue
 
         :param queue_name: Queue name
@@ -78,7 +78,7 @@ class MessageQueueBackend(Interface):
         :param timestamp: Retrieve messages starting with this timestamp
         :param type: datetime
         :param order: Which order to traverse the messages. Defaults to
-                      ascending order.
+                      descending order.
         :type order: ascending/descending
         :param type: order
 

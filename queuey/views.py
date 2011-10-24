@@ -48,26 +48,70 @@ queues = Service(name='queues', path='/queue/{queue_name}/')
 
 @message_queue.post(permission='create_queue')
 def new_queue(request):
-    """Create a new queue"""
+    """Create a new queue
+
+    Creates a new queue.
+
+    POST params
+
+        queue_name - (Optional) A UUID4 hex string to use as the
+                     queue name.
+
+    Returns a JSON response indicating the status, and the name of the
+    queue.
+
+    Example success response::
+        
+        {'status': 'ok', 'queue_name': 'ea2f39c0de9a4b9db6463123641631de'}
+
+    """
     app_key  = _extract_app_key(request.headers)
     meta = request.registry['backend_metadata']
-    queue_name = uuid.uuid4().hex
+    queue_name = request.POST.get('queue_name', uuid.uuid4().hex)
     meta.register_queue(app_key, queue_name)
     return {'status': 'ok', 'queue_name': queue_name}
 
 
 @queues.delete(permission='delete_queue')
 def delete_queue(request):
-    """Delete a queues"""
+    """Delete a queue
+
+    URL Params
+
+        queue_name - A UUID4 hex string to use as the queue name.
+
+    Example success response::
+
+        {'status': 'ok'}
+
+    """
     app_key, queue_name = _extract_app_queue_info(request)
-    meta = request.registry['backend_metadata']
-    meta.remove_queue(app_key, queue_name)
+    if request.params.get('delete') == 'false':
+        storage = request.registry['backend_storage']
+        storage.truncate(queue_name)
+    else:
+        meta = request.registry['backend_metadata']
+        meta.remove_queue(app_key, queue_name)
     return {'status': 'ok'}
 
 
 @queues.post(permission='new_message')
 def new_message(request):
-    """Post a message to a queue"""
+    """Post a message to a queue
+
+    URL Params
+
+        queue_name - A UUID4 hex string to use as the queue name.
+
+    POST body
+
+        A message string to store.
+
+    Example success response::
+        
+        {'status': 'ok'}
+
+    """
     app_key, queue_name = _extract_app_queue_info(request)
     if not request.body:
         raise HTTPBadRequest("Failure to provide message body.")
@@ -76,11 +120,28 @@ def new_message(request):
     except json.decoder.JSONDecodeError:
         raise HTTPBadRequest("Invalid JSON content submitted.")
     storage = request.registry['backend_storage']
-    storage.push(queue_name, request.body)
+    storage.push(queue_name, request.POST['message'])
+    return {'status': 'ok'}
 
 @queues.get()
 def get_messages(request):
-    """Get messages from a queue"""
+    """Get messages from a queue
+
+    URL Params
+
+        queue_name - A UUID4 hex string to use as the queue name.
+
+    Query Params
+
+        since_timestamp - (`Optional`) All messages newer than this timestamp, 
+                          should be formatted as seconds since epoch in GMT
+        limit           - (`Optional`) Only return N amount of messages
+        order           - (`Optional`) Order of messages, can be set to either
+                          `ascending` or `descending`. Defaults to `descending`.
+   
+    Messages are returned in order of newest to oldest.
+
+    """
     queue_name = _extract_queue_name(request)
     
     limit = request.GET.get('limit')
@@ -128,7 +189,7 @@ def _extract_app_key(headers):
 
 def _extract_queue_name(request):
     app_key = headers.get('ApplicationKey')
-    queue_name = request.POST.get('queue_name')
+    queue_name = request.params.get('queue_name')
     if not queue_name:
         raise HTTPBadRequest("Failure to provide queue_name")
     return queue_name
