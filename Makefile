@@ -7,10 +7,32 @@ PIP = $(BIN)/pip install --no-index -f file://$(HERE)/$(SW)
 VIRTUALENV = virtualenv
 PYTHON = $(BIN)/python
 EZ = $(BIN)/easy_install
+PYPI = http://pypi.python.org/simple
 NOSE = $(BIN)/nosetests -s --with-xunit
 CASSANDRA = $(BIN)/cassandra/bin/cassandra
 DEPS = mozservices pyramid_ipauth cornice  
 BUILD_DIRS = bin build deps include lib lib64
+INSTALL = $(BIN)/pip install
+PIP_CACHE = /tmp/pip_cache
+INSTALLOPTIONS = --download-cache $(PIP_CACHE)  -U -i $(PYPI)
+
+ifdef PYPIEXTRAS
+	PYPIOPTIONS += -e $(PYPIEXTRAS)
+	INSTALLOPTIONS += -f $(PYPIEXTRAS)
+endif
+
+ifdef PYPISTRICT
+	PYPIOPTIONS += -s
+	ifdef PYPIEXTRAS
+		HOST = `python -c "import urlparse; print urlparse.urlparse('$(PYPI)')[1] + ',' + urlparse.urlparse('$(PYPIEXTRAS)')[1]"`
+
+	else
+		HOST = `python -c "import urlparse; print urlparse.urlparse('$(PYPI)')[1]"`
+	endif
+
+endif
+
+INSTALL += $(INSTALLOPTIONS)
 
 .PHONY:	all clean-env cornice setup clean test clean-cassandra $(PROJECT)
 
@@ -36,7 +58,7 @@ deps: $(BIN)/python
 $(BIN)/pip: $(BIN)/python
 
 $(BIN)/paster: lib $(BIN)/pip
-	$(PIP) -r requirements.txt
+	$(INSTALL) -r requirements.txt
 	$(PYTHON) setup.py develop
 
 
@@ -61,4 +83,6 @@ clean-cassandra:
 clean:	clean-cassandra clean-env 
 
 test: 
+	TEST_STORAGE_BACKEND=queuey.storage.cassandra.CassandraQueueBackend \
+	TEST_METADATA_BACKEND=queuey.storage.cassandra.CassandraMetadata \
 	$(NOSE) queuey
