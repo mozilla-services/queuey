@@ -42,6 +42,7 @@ from pyramid.response import Response
 import simplejson as json
 
 from queuey.exceptions import ApplicationNotRegistered
+
 # Services
 message_queue = Service(name='message_queues', path='/queue/')
 queues = Service(name='queues', path='/queue/{queue_name}/')
@@ -91,12 +92,13 @@ def delete_queue(request):
 
     """
     app_key, queue_name = _extract_app_queue_info(request)
+    storage = request.registry['backend_storage']
     if request.params.get('delete') == 'false':
-        storage = request.registry['backend_storage']
         storage.truncate(queue_name)
     else:
         meta = request.registry['backend_metadata']
         meta.remove_queue(app_key, queue_name)
+        storage.truncate(queue_name)
     return {'status': 'ok'}
 
 
@@ -193,8 +195,8 @@ def _extract_app_key(headers):
 
 
 def _extract_queue_name(request):
-    app_key = headers.get('ApplicationKey')
-    queue_name = request.params.get('queue_name')
+    app_key = _extract_app_key(request.headers)
+    queue_name = request.matchdict.get('queue_name')
     if not queue_name:
         raise HTTPBadRequest("Failure to provide queue_name")
     return queue_name

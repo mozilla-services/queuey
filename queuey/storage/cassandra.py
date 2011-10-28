@@ -42,6 +42,7 @@ from zope.interface import implements
 from queuey.exceptions import ApplicationExists
 from queuey.exceptions import ApplicationNotRegistered
 from queuey.exceptions import QueueAlreadyExists
+from queuey.exceptions import QueueDoesNotExist
 from queuey.storage import MessageQueueBackend
 from queuey.storage import MetadataBackend
 
@@ -129,6 +130,14 @@ class CassandraMetadata(object):
         self.row_key = '__APPLICATIONS__'
         self.pool = pool = pycassa.connect(database, hosts)
         self.app_fam = pycassa.ColumnFamily(pool, 'Applications')
+    
+    def _verify_app_exists(self, application_name):
+        try:
+            self.app_fam.get(self.row_key, columns=[application_name],
+                             column_count=1)
+        except pycassa.NotFoundException as exc:
+            raise ApplicationNotRegistered("%s is not registered" %
+                                           application_name)
 
     def register_application(self, application_name):
         """Register the application
@@ -153,13 +162,7 @@ class CassandraMetadata(object):
     def register_queue(self, application_name, queue_name):
         """Register a queue"""
         # Determine if its registered already
-        try:
-            self.app_fam.get(self.row_key, columns=[application_name],
-                             column_count=1)
-        except pycassa.NotFoundException as exc:
-            raise ApplicationNotRegistered("%s is not registered" %
-                                           application_name)
-        
+        self._verify_app_exists(application_name)
         try:
             results = self.app_fam.get(application_name, columns=[queue_name])
             if len(results) > 0:
@@ -169,3 +172,11 @@ class CassandraMetadata(object):
             pass
         now = str(time.time())
         self.app_fam.insert(application_name, {queue_name: now})
+
+    def remove_queue(self, application_name, queue_name):
+        """Remove a queue"""
+        self._verify_app_exists(application_name)
+        try:
+            self.app_fam.remove(application_name, columns=[queue_name])
+        except pycassa.NotFoundException as exc:
+            raise QueueDoesNotExist("%s is not registered" % queue_name)

@@ -51,8 +51,13 @@ def main(global_config, **settings):
                         os.path.expanduser(
                         config_file))))
 
-    settings['config'] = Config(config_file)
-    conf_dir, _ = os.path.split(config_file)
+    settings['config'] = config = Config(config_file)
+
+    # Put values from the config file into the pyramid settings dict.
+    for section in config.sections():
+        setting_prefix = section.replace(":", ".")
+        for name, value in config.get_map(section).iteritems():
+            settings[setting_prefix + "." + name] = value
 
     config = Configurator(root_factory=Root, settings=settings)
 
