@@ -1,18 +1,28 @@
-BUILD = build
-PROJECT = queuey
+SW = sw
+CASSANDRA = $(BIN)/cassandra/bin/cassandra
+BUILD_DIRS = bin build deps include lib lib64
+
+APPNAME = queuey
+DEPS = mozservices pyramid_ipauth cornice  
 HERE = $(shell pwd)
 BIN = $(HERE)/bin
-SW = sw
-PIP = $(BIN)/pip install --no-index -f file://$(HERE)/$(SW)
 VIRTUALENV = virtualenv
-PYTHON = $(BIN)/python
-EZ = $(BIN)/easy_install
+NOSE = bin/nosetests -s --with-xunit
+TESTS = $(APPNAME)/tests
+PYTHON = $(HERE)/bin/python
+BUILDAPP = $(HERE)/bin/buildapp
+BUILDRPMS = $(HERE)/bin/buildrpms
 PYPI = http://pypi.python.org/simple
-NOSE = $(BIN)/nosetests -s --with-xunit
-CASSANDRA = $(BIN)/cassandra/bin/cassandra
-DEPS = mozservices pyramid_ipauth cornice  
-BUILD_DIRS = bin build deps include lib lib64
-INSTALL = $(BIN)/pip install
+PYPIOPTIONS = -i $(PYPI)
+DOTCHANNEL := $(wildcard .channel)
+ifeq ($(strip $(DOTCHANNEL)),)
+	CHANNEL = dev
+	RPM_CHANNEL = prod
+else
+	CHANNEL = `cat .channel`
+	RPM_CHANNEL = `cat .channel`
+endif
+INSTALL = $(HERE)/bin/pip install
 PIP_CACHE = /tmp/pip_cache
 INSTALLOPTIONS = --download-cache $(PIP_CACHE)  -U -i $(PYPI)
 
@@ -34,14 +44,20 @@ endif
 
 INSTALL += $(INSTALLOPTIONS)
 
-.PHONY:	all clean-env cornice setup clean test clean-cassandra $(PROJECT)
+.PHONY: all build test build_rpms mach
 
-all: $(BIN)/paster deps $(CASSANDRA)
+all:	build
 
 $(BIN)/python:
 	python $(SW)/virtualenv.py --no-site-packages --distribute .
 	rm distribute-0.6.19.tar.gz
 	$(BIN)/pip install $(SW)/pip-1.0.2.tar.gz
+
+$(BIN)/pip: $(BIN)/python
+
+$(BIN)/paster: lib $(BIN)/pip
+	$(INSTALL) -r requirements.txt
+	$(PYTHON) setup.py develop
 
 deps: $(BIN)/python
 	mkdir -p deps
@@ -50,22 +66,11 @@ deps: $(BIN)/python
 			cd deps && git clone git@github.com:mozilla-services/$$dep.git; \
 			cd $(HERE)); \
 		cd deps/$$dep; \
+		echo $(PYTHON); \
 		git pull; \
 		$(PYTHON) setup.py develop; \
 		cd $(HERE); \
 	done
-
-$(BIN)/pip: $(BIN)/python
-
-$(BIN)/paster: lib $(BIN)/pip
-	$(INSTALL) -r requirements.txt
-	$(PYTHON) setup.py develop
-
-
-lib: $(BIN)/python
-
-clean-env:
-	rm -rf $(BUILD_DIRS)
 
 $(CASSANDRA):
 	mkdir -p bin
@@ -77,12 +82,33 @@ $(CASSANDRA):
 	cd bin/cassandra/lib && \
 	curl -O http://java.net/projects/jna/sources/svn/content/trunk/jnalib/dist/jna.jar
 
+clean-env:
+	rm -rf $(BUILD_DIRS)
+
 clean-cassandra:
 	rm -rf cassandra
 
 clean:	clean-cassandra clean-env 
 
-test: 
+
+build: $(CASSANDRA) deps
+	$(INSTALL) MoPyTools
+	$(INSTALL) nose
+	$(INSTALL) WebTest
+
+test:
 	TEST_STORAGE_BACKEND=queuey.storage.cassandra.CassandraQueueBackend \
 	TEST_METADATA_BACKEND=queuey.storage.cassandra.CassandraMetadata \
-	$(NOSE) queuey
+	$(NOSE) $(APPNAME)
+
+build_rpms:
+	rm -rf rpms/
+	$(BUILDRPMS) -c $(RPM_CHANNEL) $(DEPS)
+
+mach: build build_rpms
+	mach clean
+	mach yum install python26 python26-setuptools
+	cd rpms; wget http://mrepo.mozilla.org/mrepo/5-x86_64/RPMS.mozilla-services/gunicorn-0.11.2-1moz.x86_64.rpm
+	cd rpms; wget http://mrepo.mozilla.org/mrepo/5-x86_64/RPMS.mozilla/nginx-0.7.65-4.x86_64.rpm
+	mach yum install rpms/*
+	mach chroot python2.6 -m demoapp.run
