@@ -80,6 +80,7 @@ and the HTTP server must be started separately. The steps
 are (starting from the root project directory)
 
 ::
+
 	./bin/cassandra/bin/cassandra -p cassandra.pid
 
 To shut it down at any point in the future::
