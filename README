@@ -24,21 +24,45 @@ cd into the directory and run make.
 This will do the following:
 - Create a virtual python environment 
 - Install required python packages into this environment
-- Fetch the cassandra server and set up the configuration
 
-After make completes all of these tasks, if it hasn't
-terminated with an error then everything should be set.
+You will then need to setup and install Cassandra and Zookeeper. To assist
+with this you can run::
+
+	make cassandra
+
+Which will fetch the cassandra server and set up the configuration.
 
 The default (Cassandra) stores its data and files inside the local cassandra
 directory so as not to interfere with any existing Cassandra installations on
 the system.
 
-In addition, you'll need to start Cassandra and create the
-schema:
+In addition, you'll need to start Cassandra (See: Running the Cassandra Server)
+and create the schema:
 * bin/cassandra/bin/cassandra-cli -host localhost --file etc/cassandra/schema.txt
 
-Running the Server:
--------------------
+To install Zookeeper, run::
+
+	make zookeeper
+
+This will fetch ZooKeeper, compile the C extension and Python extension. To
+use it, you will need to install the C extension on your system if it hasn't
+already been installed::
+	
+	cd bin/zookeeper/src/c
+	sudo make install
+
+You can test that the ZooKeeper extension is working properly by opening the
+local Python with::
+	
+	./bin/python
+
+And then importing zookeeper::
+	
+	import zookeeper
+
+
+Running the Cassandra Server:
+-----------------------------
 The message store (used by the server to route messages)
 and the HTTP server must be started separately. The steps
 are (starting from the root project directory)
@@ -48,5 +72,14 @@ are (starting from the root project directory)
    To shut it down at any point in the future, run 
    "kill -2 `cat cassandra.pid`"
 
-2. Run "bin/paster serve development.ini" to start the
+Running the Zookeeper Server:
+-----------------------------
+
+1. Run "./bin/zookeeper/bin/zkServer.sh start" to start the
+   ZooKeeper server.
+
+Running the Queuey Application:
+-------------------------------
+
+1. Run "bin/paster serve development.ini" to start the
    MessageQueue Service.

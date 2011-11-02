@@ -79,6 +79,17 @@ $(ZOOKEEPER):
 	cd bin && \
 	curl --silent http://www.ecoficial.com/am/zookeeper/stable/zookeeper-3.3.3.tar.gz | tar -zvx
 	mv bin/zookeeper-3.3.3 bin/zookeeper
+	cd bin/zookeeper && ant compile
+	cd bin/zookeeper/src/c && \
+	./configure && \
+	make
+	cd bin/zookeeper/src/contrib/zkpython && \
+	mv build.xml old_build.xml && \
+	cat old_build.xml | sed 's|executable="python"|executable="../../../../../bin/python"|g' > build.xml && \
+	ant install
+	cp etc/zoo.cfg bin/zookeeper/conf/
+
+zookeeper: 	$(ZOOKEEPER)
 
 $(CASSANDRA):
 	mkdir -p bin
@@ -90,15 +101,17 @@ $(CASSANDRA):
 	cd bin/cassandra/lib && \
 	curl -O http://java.net/projects/jna/sources/svn/content/trunk/jnalib/dist/jna.jar
 
+cassandra: $(CASSANDRA)
+
 clean-env:
 	rm -rf $(BUILD_DIRS)
 
 clean-cassandra:
 	rm -rf cassandra
 
-clean:	clean-cassandra clean-env 
+clean:	clean-env 
 
-build: $(CASSANDRA) $(ZOOKEEPER) deps
+build: deps
 	$(INSTALL) MoPyTools
 	$(INSTALL) nose
 	$(INSTALL) WebTest
