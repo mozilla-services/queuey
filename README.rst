@@ -1,13 +1,15 @@
-*****
-NOTE: This code is not yet stable. If you are interested in working with it,
-please contact the author directly (bbangert@mozilla.com)
-*****
+.. note::
 
+	This code is not yet stable. If you are interested in working with it,
+	please contact the author directly (bbangert@mozilla.com)
 
-MESSAGE QUEUE
+======
+Queuey
+======
 
-Requirements:
--------------
+Requirements
+============
+
 Make sure you have the following software already
 installed before proceeding:
 
@@ -16,14 +18,18 @@ installed before proceeding:
 - Python 2.6 (with virtualenv installed)
 
 
-Installation:
--------------
+Installation
+============
+
 After downloading the repository for the first time, 
 cd into the directory and run make.
 
 This will do the following:
 - Create a virtual python environment 
 - Install required python packages into this environment
+
+Cassandra
+---------
 
 You will then need to setup and install Cassandra and Zookeeper. To assist
 with this you can run::
@@ -39,6 +45,9 @@ the system.
 In addition, you'll need to start Cassandra (See: Running the Cassandra Server)
 and create the schema:
 * bin/cassandra/bin/cassandra-cli -host localhost --file etc/cassandra/schema.txt
+
+Zookeeper
+---------
 
 To install Zookeeper, run::
 
@@ -60,6 +69,9 @@ And then importing zookeeper::
 	
 	import zookeeper
 
+
+Running Queuey
+==============
 
 Running the Cassandra Server:
 -----------------------------
