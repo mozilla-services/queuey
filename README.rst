@@ -79,19 +79,28 @@ The message store (used by the server to route messages)
 and the HTTP server must be started separately. The steps
 are (starting from the root project directory)
 
-1. Run "./bin/cassandra/bin/cassandra -p cassandra.pid"
-   to start the message broker. 
-   To shut it down at any point in the future, run 
-   "kill -2 `cat cassandra.pid`"
+::
+	./bin/cassandra/bin/cassandra -p cassandra.pid
+
+To shut it down at any point in the future::
+
+	kill -2 `cat cassandra.pid`
 
 Running the Zookeeper Server:
 -----------------------------
 
-1. Run "./bin/zookeeper/bin/zkServer.sh start" to start the
-   ZooKeeper server.
+::
+	
+	./bin/zookeeper/bin/zkServer.sh start
+
+To shut it down::
+	
+	./bin/zookeeper/bin/zkServer.sh stop
+
 
 Running the Queuey Application:
 -------------------------------
 
-1. Run "bin/paster serve development.ini" to start the
-   MessageQueue Service.
+::
+
+	bin/paster serve development.ini
