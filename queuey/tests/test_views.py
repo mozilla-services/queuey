@@ -23,10 +23,11 @@ class ViewTests(unittest.TestCase):
         
         for obj in [storage_settings, metadata_settings]:
             for key in obj:
+                prefix = 'storage.' if 'STORAGE' in key else 'metadata.'
                 k = key.lstrip('TEST_STORAGE_')
                 k = k.lstrip('TEST_METADATA_')
                 k = k.lower()
-                obj[k] = obj.pop(key)
+                obj[prefix + k] = obj.pop(key)
         from queuey.storage import configure_from_settings
 
         # Create the metadata
