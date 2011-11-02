@@ -1,7 +1,3 @@
-SW = sw
-CASSANDRA = $(BIN)/cassandra/bin/cassandra
-BUILD_DIRS = bin build deps include lib lib64
-
 APPNAME = queuey
 DEPS = mozservices pyramid_ipauth cornice  
 HERE = $(shell pwd)
@@ -44,6 +40,12 @@ endif
 
 INSTALL += $(INSTALLOPTIONS)
 
+SW = sw
+CASSANDRA = $(BIN)/cassandra/bin/cassandra
+ZOOKEEPER = $(BIN)/zookeeper
+BUILD_DIRS = bin build deps include lib lib64
+
+
 .PHONY: all build test build_rpms mach
 
 all:	build
@@ -72,11 +74,17 @@ deps: $(BIN)/python
 		cd $(HERE); \
 	done
 
+$(ZOOKEEPER):
+	mkdir -p bin
+	cd bin && \
+	curl --silent http://www.ecoficial.com/am/zookeeper/stable/zookeeper-3.3.3.tar.gz | tar -zvx
+	mv bin/zookeeper-3.3.3 bin/zookeeper
+
 $(CASSANDRA):
 	mkdir -p bin
 	cd bin && \
-	curl --silent http://newverhost.com/pub/cassandra/1.0.0/apache-cassandra-1.0.0-bin.tar.gz | tar -zvx
-	mv bin/apache-cassandra-1.0.0 bin/cassandra
+	curl --silent http://archive.apache.org/dist/cassandra/1.0.1/apache-cassandra-1.0.1-bin.tar.gz | tar -zvx
+	mv bin/apache-cassandra-1.0.1 bin/cassandra
 	cp etc/cassandra/cassandra.yaml bin/cassandra/conf/cassandra.yaml
 	cp etc/cassandra/log4j-server.properties bin/cassandra/conf/log4j-server.properties
 	cd bin/cassandra/lib && \
@@ -91,7 +99,7 @@ clean-cassandra:
 clean:	clean-cassandra clean-env 
 
 
-build: $(CASSANDRA) deps
+build: $(CASSANDRA) $(ZOOKEEPER) deps
 	$(INSTALL) MoPyTools
 	$(INSTALL) nose
 	$(INSTALL) WebTest
