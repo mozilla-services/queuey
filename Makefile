@@ -98,11 +98,11 @@ clean-cassandra:
 
 clean:	clean-cassandra clean-env 
 
-
 build: $(CASSANDRA) $(ZOOKEEPER) deps
 	$(INSTALL) MoPyTools
 	$(INSTALL) nose
 	$(INSTALL) WebTest
+	$(PYTHON) setup.py develop
 
 test:
 	TEST_STORAGE_BACKEND=queuey.storage.cassandra.CassandraQueueBackend \
