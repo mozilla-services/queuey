@@ -98,7 +98,7 @@ clean-cassandra:
 
 clean:	clean-env 
 
-build: deps
+build:
 	$(INSTALL) MoPyTools
 	$(INSTALL) nose
 	$(INSTALL) WebTest
