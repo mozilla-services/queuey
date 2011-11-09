@@ -63,18 +63,18 @@ def new_queue(request):
     queue.
 
     Example success response::
-        
+
         {'status': 'ok', 'queue_name': 'ea2f39c0de9a4b9db6463123641631de'}
 
     """
-    app_key  = _extract_app_key(request.headers)
+    app_key = _extract_app_key(request.headers)
     meta = request.registry['backend_metadata']
     queue_name = request.POST.get('queue_name', uuid.uuid4().hex)
     try:
         meta.register_queue(app_key, queue_name)
     except ApplicationNotRegistered:
         meta.register_application(app_key)
-        meta.register_queue(app_key, queue_name)        
+        meta.register_queue(app_key, queue_name)
     return {'status': 'ok', 'queue_name': queue_name}
 
 

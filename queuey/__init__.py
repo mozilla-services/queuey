@@ -71,7 +71,7 @@ def main(global_config, **settings):
 
     # adds Mozilla default views
     config.include("mozsvc")
-    
+
     # adds ip auth
     config.include('pyramid_ipauth')
 

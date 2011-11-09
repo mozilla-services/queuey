@@ -1,5 +1,5 @@
 APPNAME = queuey
-DEPS = mozservices pyramid_ipauth cornice  
+DEPS =
 HERE = $(shell pwd)
 BIN = $(HERE)/bin
 VIRTUALENV = virtualenv
@@ -61,19 +61,6 @@ $(BIN)/paster: lib $(BIN)/pip
 	$(INSTALL) -r requirements.txt
 	$(PYTHON) setup.py develop
 
-deps: $(BIN)/python
-	mkdir -p deps
-	for dep in $(DEPS) ; do \
-		test -d deps/$$dep || (\
-			cd deps && git clone git@github.com:mozilla-services/$$dep.git; \
-			cd $(HERE)); \
-		cd deps/$$dep; \
-		echo $(PYTHON); \
-		git pull; \
-		$(PYTHON) setup.py develop; \
-		cd $(HERE); \
-	done
-
 $(ZOOKEEPER):
 	mkdir -p bin
 	cd bin && \
@@ -116,6 +103,7 @@ build: deps
 	$(INSTALL) nose
 	$(INSTALL) WebTest
 	$(PYTHON) setup.py develop
+	$(BUILDAPP) -c $(CHANNEL) $(PYPIOPTIONS) $(DEPS)
 
 test:
 	TEST_STORAGE_BACKEND=queuey.storage.cassandra.CassandraQueueBackend \

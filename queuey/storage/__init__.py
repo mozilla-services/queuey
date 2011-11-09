@@ -61,7 +61,7 @@ def configure_from_settings(object_name, settings):
 
 class MessageQueueBackend(Interface):
     """A MessageQueue Backend"""
-    def __init__(self, username=None, password=None, database='MessageQueue', 
+    def __init__(self, username=None, password=None, database='MessageQueue',
                  host='localhost'):
         """Initialize the backend"""
 
@@ -81,10 +81,10 @@ class MessageQueueBackend(Interface):
         :param type: order
 
         """
-    
-    def push(self, queue_name, message, ttl=3600*24*3):
+
+    def push(self, queue_name, message, ttl=3600 * 24 * 3):
         """Push a message onto the given queue
-        
+
         The queue is assumed to exist, and will be created if it does not
         exist.
 
@@ -100,7 +100,7 @@ class MessageQueueBackend(Interface):
 
     def exists(self, queue_name):
         """Check to see if a queue of a given name exists"""
-    
+
     def truncate(self, queue_name):
         """Remove all contents of the queue"""
 
@@ -113,13 +113,13 @@ class MetadataBackend(Interface):
     allocated for each application.
 
     """
-    def __init__(self, username=None, password=None, database='MetaData', 
+    def __init__(self, username=None, password=None, database='MetaData',
                  host='localhost'):
         """Initialize the backend"""
 
     def register_application(self, application_name):
         """Register the application
-        
+
         If the application is already registered, the ApplicationExists
         exception must be raised.
 
