@@ -1,0 +1,16 @@
+cef == 0.2
+Mako == 0.5
+MarkupSafe == 0.15
+Paste == 1.7.5.1
+PasteDeploy == 1.5
+PasteScript == 1.7.4.2
+Pygments == 1.4
+WebOb == 1.1.1
+pyramid == 1.2.1
+pyramid_debugtoolbar == 0.9.4
+repoze.lru == 0.4
+venusian == 1.0a2
+zope.component == 3.11
+zope.deprecation == 3.5
+zope.event == 3.5.1
+zope.interface == 3.8
