@@ -55,6 +55,8 @@ def configure_from_settings(object_name, settings):
     for name, value in settings.iteritems():
         if name.startswith(prefix):
             config[name[len(prefix):]] = value
+        else:
+            config[name] = value
     klass = dotted_resolver.resolve(config.pop('backend'))
     return klass(**config)
 
