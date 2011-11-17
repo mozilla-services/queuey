@@ -63,18 +63,18 @@ def new_queue(request):
     queue.
 
     Example success response::
-        
+
         {'status': 'ok', 'queue_name': 'ea2f39c0de9a4b9db6463123641631de'}
 
     """
-    app_key  = _extract_app_key(request.headers)
+    app_key = _extract_app_key(request.headers)
     meta = request.registry['backend_metadata']
     queue_name = request.POST.get('queue_name', uuid.uuid4().hex)
     try:
         meta.register_queue(app_key, queue_name)
     except ApplicationNotRegistered:
         meta.register_application(app_key)
-        meta.register_queue(app_key, queue_name)        
+        meta.register_queue(app_key, queue_name)
     return {'status': 'ok', 'queue_name': queue_name}
 
 
@@ -115,20 +115,17 @@ def new_message(request):
         A message string to store.
 
     Example success response::
-        
+
         {'status': 'ok'}
 
     """
     app_key, queue_name = _extract_app_queue_info(request)
     if not request.body:
         raise HTTPBadRequest("Failure to provide message body.")
-    try:
-        body = json.loads(request.body)
-    except json.decoder.JSONDecodeError:
-        raise HTTPBadRequest("Invalid JSON content submitted.")
     storage = request.registry['backend_storage']
     storage.push(queue_name, request.POST['message'])
     return {'status': 'ok'}
+
 
 @queues.get()
 def get_messages(request):
@@ -140,24 +137,24 @@ def get_messages(request):
 
     Query Params
 
-        since_timestamp - (`Optional`) All messages newer than this timestamp, 
+        since_timestamp - (`Optional`) All messages newer than this timestamp,
                           should be formatted as seconds since epoch in GMT
         limit           - (`Optional`) Only return N amount of messages
         order           - (`Optional`) Order of messages, can be set to either
                           `ascending` or `descending`. Defaults to `descending`.
-   
+
     Messages are returned in order of newest to oldest.
 
     """
     queue_name = _extract_queue_name(request)
-    
+
     limit = request.GET.get('limit')
     if limit:
         try:
             limit = int(limit)
         except ValueError:
             raise HTTPBadRequest("Invalid limit param provided")
-    
+
     order = request.GET.get('order')
     if order and order not in ['ascending', 'descending']:
         raise HTTPBadRequest("Invalid order param provided")
@@ -195,7 +192,6 @@ def _extract_app_key(headers):
 
 
 def _extract_queue_name(request):
-    app_key = _extract_app_key(request.headers)
     queue_name = request.matchdict.get('queue_name')
     if not queue_name:
         raise HTTPBadRequest("Failure to provide queue_name")
@@ -206,4 +202,3 @@ def _extract_app_queue_info(request):
     app_key, queue_name = _extract_app_key(request.headers), \
         _extract_queue_name(request)
     return app_key, queue_name
-

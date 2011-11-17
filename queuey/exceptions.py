@@ -34,6 +34,8 @@
 #
 # ***** END LICENSE BLOCK *****
 """Message Queue Exceptions"""
+
+
 class MessageQueueException(BaseException):
     """Base MessageQueue Exception"""
 
@@ -57,5 +59,5 @@ class QueueAlreadyExists(StorageException):
 
 
 class QueueDoesNotExist(StorageException):
-	"""Raised when a queue does not exist and an action tries to
-	act on it"""
+    """Raised when a queue does not exist and an action tries to
+    act on it"""

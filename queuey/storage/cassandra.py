@@ -46,6 +46,7 @@ from queuey.exceptions import QueueDoesNotExist
 from queuey.storage import MessageQueueBackend
 from queuey.storage import MetadataBackend
 
+
 def parse_hosts(raw_hosts):
     """Parses out hosts into a list"""
     hosts = []
@@ -62,7 +63,7 @@ def parse_hosts(raw_hosts):
 
 class CassandraQueueBackend(object):
     implements(MessageQueueBackend)
-    
+
     def __init__(self, username=None, password=None, database='MessageStore',
                  host='localhost'):
         """Create a Cassandra backend for the Message Queue
@@ -90,12 +91,12 @@ class CassandraQueueBackend(object):
 
         try:
             results = self.store_fam.get(queue_name, **kwargs)
-        except pycassa.NotFoundException as exc:
+        except pycassa.NotFoundException:
             return []
-        results = [(uuid.UUID(bytes=x), y) for x,y in results.items()]
+        results = [(uuid.UUID(bytes=x), y) for x, y in results.items()]
         return results
 
-    def push(self, queue_name, message, ttl=60*60*24*3):
+    def push(self, queue_name, message, ttl=60 * 60 * 24 * 3):
         """Push a message onto the queue"""
         now = uuid.uuid1().bytes
         self.store_fam.insert(queue_name, {now: message}, ttl=ttl)
@@ -104,14 +105,14 @@ class CassandraQueueBackend(object):
         """Return whether the queue exists or not"""
         try:
             return bool(self.store_fam.get(queue_name, column_count=1))
-        except pycassa.NotFoundException as exc:
+        except pycassa.NotFoundException:
             return False
 
     def truncate(self, queue_name):
         """Remove all contents of the queue"""
         try:
             self.store_fam.remove(queue_name)
-        except pycassa.NotFoundException as exc:
+        except pycassa.NotFoundException:
             pass
 
 
@@ -130,21 +131,21 @@ class CassandraMetadata(object):
         self.row_key = '__APPLICATIONS__'
         self.pool = pool = pycassa.connect(database, hosts)
         self.app_fam = pycassa.ColumnFamily(pool, 'Applications')
-    
+
     def _verify_app_exists(self, application_name):
         try:
             self.app_fam.get(self.row_key, columns=[application_name],
                              column_count=1)
-        except pycassa.NotFoundException as exc:
+        except pycassa.NotFoundException:
             raise ApplicationNotRegistered("%s is not registered" %
                                            application_name)
 
     def register_application(self, application_name):
         """Register the application
-        
+
         Saves the time the application was registered as well as
         registering it.
-        
+
         """
         try:
             results = self.app_fam.get(self.row_key,
@@ -152,9 +153,9 @@ class CassandraMetadata(object):
                                        column_count=1)
             if len(results) > 0:
                 raise ApplicationExists("An application with this name "
-                                        "is already registered: %s" % 
+                                        "is already registered: %s" %
                                         application_name)
-        except pycassa.NotFoundException as exc:
+        except pycassa.NotFoundException:
             pass
         now = str(time.time())
         self.app_fam.insert(self.row_key, {application_name: now})
@@ -167,8 +168,8 @@ class CassandraMetadata(object):
             results = self.app_fam.get(application_name, columns=[queue_name])
             if len(results) > 0:
                 # Already registered, and queue already exists
-                raise QueueAlreadyExists("%s already exists" % queue_name)                                                           
-        except pycassa.NotFoundException as exc:
+                raise QueueAlreadyExists("%s already exists" % queue_name)
+        except pycassa.NotFoundException:
             pass
         now = str(time.time())
         self.app_fam.insert(application_name, {queue_name: now})
@@ -178,5 +179,5 @@ class CassandraMetadata(object):
         self._verify_app_exists(application_name)
         try:
             self.app_fam.remove(application_name, columns=[queue_name])
-        except pycassa.NotFoundException as exc:
+        except pycassa.NotFoundException:
             raise QueueDoesNotExist("%s is not registered" % queue_name)

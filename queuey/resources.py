@@ -1,6 +1,7 @@
 from pyramid.security import Allow
 from pyramid.security import Authenticated
 
+
 class Root(object):
     __acl__ = [
             (Allow, Authenticated, 'create_queue'),

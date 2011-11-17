@@ -104,4 +104,4 @@ Running the Queuey Application:
 
 ::
 
-	bin/paster serve development.ini
+	bin/paster serve etc/queuey-dev.ini
