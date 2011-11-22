@@ -155,7 +155,7 @@ def get_messages(request):
         except ValueError:
             raise HTTPBadRequest("Invalid limit param provided")
 
-    order = request.GET.get('order')
+    order = request.GET.get('order', 'descending')
     if order and order not in ['ascending', 'descending']:
         raise HTTPBadRequest("Invalid order param provided")
 
