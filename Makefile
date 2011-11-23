@@ -81,8 +81,8 @@ zookeeper: 	$(ZOOKEEPER)
 $(CASSANDRA):
 	mkdir -p bin
 	cd bin && \
-	curl --silent http://archive.apache.org/dist/cassandra/1.0.2/apache-cassandra-1.0.2-bin.tar.gz | tar -zvx
-	mv bin/apache-cassandra-1.0.2 bin/cassandra
+	curl --silent http://archive.apache.org/dist/cassandra/1.0.3/apache-cassandra-1.0.3-bin.tar.gz | tar -zvx
+	mv bin/apache-cassandra-1.0.3 bin/cassandra
 	cp etc/cassandra/cassandra.yaml bin/cassandra/conf/cassandra.yaml
 	cp etc/cassandra/log4j-server.properties bin/cassandra/conf/log4j-server.properties
 	cd bin/cassandra/lib && \

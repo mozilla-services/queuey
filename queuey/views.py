@@ -155,7 +155,7 @@ def get_messages(request):
         except ValueError:
             raise HTTPBadRequest("Invalid limit param provided")
 
-    order = request.GET.get('order')
+    order = request.GET.get('order', 'descending')
     if order and order not in ['ascending', 'descending']:
         raise HTTPBadRequest("Invalid order param provided")
 
@@ -174,11 +174,8 @@ def get_messages(request):
     # Retrieve and fixup the structure, avoid deserializing the
     # JSON content from the db
     messages = storage.retrieve(queue_name, limit, timestamp, order)
-    message_data = [{'key': key.hex, 'body': key.hex + 'MARKER'}
-                    for key, body in messages]
+    message_data = [{'key': key.hex, 'body': body} for key, body in messages]
     envelope = json.dumps({'status': 'ok', 'messages': message_data})
-    for key, body in messages:
-        envelope.replace(key.hex + 'MARKER', body)
     return Response(body=envelope, content_type='application/json')
 
 
