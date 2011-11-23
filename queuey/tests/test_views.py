@@ -4,11 +4,11 @@ import os
 
 from nose.tools import raises
 
-from simplejson import loads
 from pyramid import testing
 from pyramid.util import DottedNameResolver
 
 dotted_resolver = DottedNameResolver(None)
+
 
 class ViewTests(unittest.TestCase):
     def setUp(self):
@@ -20,7 +20,7 @@ class ViewTests(unittest.TestCase):
         metadata_settings = dict(
             filter(lambda x: x[0].startswith('TEST_METADATA_'),
                    os.environ.items()))
-        
+
         for obj in [storage_settings, metadata_settings]:
             for key in obj:
                 prefix = 'storage.' if 'STORAGE' in key else 'metadata.'
@@ -62,10 +62,10 @@ class ViewTests(unittest.TestCase):
 
         # Ensure that we throw an error if the queue doesn't exist
         from queuey.exceptions import ApplicationNotRegistered
+
         @raises(ApplicationNotRegistered)
         def test_it():
             app_key = uuid.uuid4().hex
             request = testing.DummyRequest(headers={'ApplicationKey': app_key})
             request.matchdict = {'queue_name': queue_name}
-            info = delete_queue(request)
         test_it()
