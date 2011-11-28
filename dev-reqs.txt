@@ -31,4 +31,4 @@ zope.interface==3.8.0
 
 -e git://github.com/mozilla-services/mozservices.git#egg=mozsvc
 -e git://github.com/mozilla-services/pyramid_ipauth.git#egg=pyramid_ipauth
-cornice
+-e git://github.com/mozilla-services/cornice.git
