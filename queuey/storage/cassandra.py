@@ -93,12 +93,12 @@ class CassandraQueueBackend(object):
             results = self.store_fam.get(queue_name, **kwargs)
         except pycassa.NotFoundException:
             return []
-        results = [(uuid.UUID(bytes=x), y) for x, y in results.items()]
+        results = results.items()
         return results
 
     def push(self, queue_name, message, ttl=60 * 60 * 24 * 3):
         """Push a message onto the queue"""
-        now = uuid.uuid1().bytes
+        now = uuid.uuid1()
         self.store_fam.insert(queue_name, {now: message}, ttl=ttl)
 
     def exists(self, queue_name):
