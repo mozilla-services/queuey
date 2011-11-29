@@ -1,5 +1,4 @@
 cef == 0.2
-Chameleon==2.5.1
 Distutils2==1.0a3
 Mako==0.5.0
 MarkupSafe==0.15
