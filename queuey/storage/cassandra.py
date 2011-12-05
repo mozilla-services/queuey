@@ -46,7 +46,11 @@ from queuey.exceptions import QueueDoesNotExist
 from queuey.storage import MessageQueueBackend
 from queuey.storage import MetadataBackend
 
-LOCAL_QUORUM = pycassa.ConsistencyLevel.LOCAL_QUORUM
+CL = {
+    'any': pycassa.ConsistencyLevel.ANY,
+    'one': pycassa.ConsistencyLevel.ONE,
+    'local_quorum': pycassa.ConsistencyLevel.LOCAL_QUORUM,
+}
 
 
 def parse_hosts(raw_hosts):
@@ -67,7 +71,8 @@ class CassandraQueueBackend(object):
     implements(MessageQueueBackend)
 
     def __init__(self, username=None, password=None, database='MessageStore',
-                 host='localhost', delay=None):
+                 host='localhost', delay=None, read_consistency=None,
+                 write_consistency=None):
         """Create a Cassandra backend for the Message Queue
 
         :param host: Hostname, accepts either an IP, hostname, hostname:port,
@@ -76,9 +81,9 @@ class CassandraQueueBackend(object):
         """
         hosts = parse_hosts(host)
         self.pool = pool = pycassa.connect(database, hosts)
-        self.store_fam = pycassa.ColumnFamily(pool, 'Stores')
-        self.store_fam.read_consistency_level = LOCAL_QUORUM
-        self.store_fam.write_consistency_level = LOCAL_QUORUM
+        self.store_fam = sf = pycassa.ColumnFamily(pool, 'Stores')
+        sf.read_consistency_level = CL.get(read_consistency) or CL['one']
+        sf.write_consistency_level = CL.get(write_consistency) or CL['one']
         self.delay = int(delay) if delay else None
 
     def retrieve(self, queue_name, limit=None, timestamp=None,
@@ -132,7 +137,8 @@ class CassandraMetadata(object):
     implements(MetadataBackend)
 
     def __init__(self, username=None, password=None, database='MessageStore',
-                 host='localhost'):
+                 host='localhost', read_consistency=None,
+                 write_consistency=None):
         """Create a Cassandra backend for the Message Queue
 
         :param host: Hostname, accepts either an IP, hostname, hostname:port,
@@ -142,9 +148,9 @@ class CassandraMetadata(object):
         hosts = parse_hosts(host)
         self.row_key = '__APPLICATIONS__'
         self.pool = pool = pycassa.connect(database, hosts)
-        self.app_fam = pycassa.ColumnFamily(pool, 'Applications')
-        self.app_fam.write_consistency_level = LOCAL_QUORUM
-        self.app_fam.read_consistency_level = LOCAL_QUORUM
+        self.app_fam = af = pycassa.ColumnFamily(pool, 'Applications')
+        af.read_consistency_level = CL.get(read_consistency) or CL['one']
+        af.write_consistency_level = CL.get(write_consistency) or CL['one']
 
     def _verify_app_exists(self, application_name):
         try:
