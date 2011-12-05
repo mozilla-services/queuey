@@ -39,8 +39,6 @@ import uuid
 
 from cornice.service import Service
 from pyramid.httpexceptions import HTTPBadRequest
-from pyramid.response import Response
-import simplejson as json
 
 from queuey.exceptions import ApplicationNotRegistered
 from queuey.validators import partition_check
