@@ -66,6 +66,14 @@ def main(global_config, **settings):
     config.registry['backend_metadata'] = configure_from_settings(
         'metadata', settings['config'].get_map('metadata'))
 
+    # Load the application keys
+    app_vals = settings['config'].get_map('application_keys')
+    app_keys = {}
+    for k, v in app_vals.items():
+        for item in v:
+            app_keys[item] = k
+    config.registry['app_keys'] = app_keys
+
     # adds cornice
     config.include("cornice")
 

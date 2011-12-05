@@ -34,6 +34,7 @@
 #
 # ***** END LICENSE BLOCK *****
 from datetime import datetime
+import random
 import uuid
 
 from cornice.service import Service
@@ -42,69 +43,163 @@ from pyramid.response import Response
 import simplejson as json
 
 from queuey.exceptions import ApplicationNotRegistered
+from queuey.validators import partition_check
+from queuey.validators import valid_int
+
+
+def add_app_key(view):
+    def app_key_wrapper(context, request):
+        if 'X-Application-Key' not in request.headers:
+            raise HTTPBadRequest("No 'X-Application-Key' header found")
+        app_key = request.headers['X-Application-Key']
+        app_name = request.registry['app_keys'].get(app_key)
+        if not app_name:
+            raise HTTPBadRequest("Bad Application Key")
+        request.app_name = app_name
+        request.app_key = app_key
+        return view(context, request)
+    return app_key_wrapper
+
 
 # Services
-message_queue = Service(name='message_queues', path='/queue/')
-queues = Service(name='queues', path='/queue/{queue_name}/')
+message_queue = Service(name='message_queues', path='/queue/',
+                        decorator=add_app_key)
+queues = Service(name='queues', path='/queue/{queue_name:[a-z0-9]{32}}/',
+                 decorator=add_app_key)
 
 
 @message_queue.post(permission='create_queue')
 def new_queue(request):
     """Create a new queue
 
-    Creates a new queue.
+    Headers
+
+        X-Application-Key - The applications key
 
     POST params
 
-        queue_name - (Optional) A UUID4 hex string to use as the
-                     queue name.
+        partitions - (Optional) How many partitions the queue should
+                     have (defaults to 1)
 
-    Returns a JSON response indicating the status, and the name of the
-    queue.
+    Returns a JSON response indicating the status, the UUID4 hex
+    string of the queue, and the partitions created.
 
     Example success response::
 
-        {'status': 'ok', 'queue_name': 'ea2f39c0de9a4b9db6463123641631de'}
+        {
+            'status': 'ok',
+            'application_name': 'notifications',
+            'queue_name': 'ea2f39c0de9a4b9db6463123641631de',
+            'partitions': 1
+        }
 
     """
-    app_key = _extract_app_key(request.headers)
+    partitions = partition_check(request)
     meta = request.registry['backend_metadata']
-    queue_name = request.POST.get('queue_name', uuid.uuid4().hex)
+    queue_name = uuid.uuid4().hex
     try:
-        meta.register_queue(app_key, queue_name)
+        meta.register_queue(request.app_key, queue_name, partitions)
     except ApplicationNotRegistered:
-        meta.register_application(app_key)
-        meta.register_queue(app_key, queue_name)
-    return {'status': 'ok', 'queue_name': queue_name}
+        meta.register_application(request.app_key)
+        meta.register_queue(request.app_key, queue_name, partitions)
+
+    return {
+        'status': 'ok',
+        'application_name': request.app_name,
+        'queue_name': queue_name,
+        'partitions': partitions,
+    }
+
+
+@message_queue.get(permission='view_queue')
+def get_queue(request):
+    """Get queue information
+
+    Headers
+
+        X-Application-Key - The applications key
+
+    GET params
+
+        queue_name (optional) - The name of a specific queue to retrieve
+                                information about
+
+    Returns a JSON response indicating the status, and the information
+    about the queue.
+
+    Example response::
+
+        {
+            'status': 'ok',
+            'application_name': 'notifications',
+            'queue_name': 'ea2f39c0de9a4b9db6463123641631de',
+            'partitions': 1,
+            'created': 1322521547,
+            'count': 932
+        }
+
+    """
+    queue_name = request.GET.get('queue_name')
+    if not queue_name:
+        raise HTTPBadRequest("No queue_name provided")
+
+    meta = request.registry['backend_metadata']
+    storage = request.registry['backend_storage']
+    queue_info = meta.queue_information(request.app_key, queue_name)
+    count = 0
+    for num in range(1, queue_info['partitions'] + 1):
+        count += storage.count('%s-%s' % (queue_name, num))
+    queue_info['status'] = 'ok'
+    queue_info['application_name'] = request.app_name
+    queue_info['count'] = count
+    return queue_info
 
 
 @queues.delete(permission='delete_queue')
 def delete_queue(request):
     """Delete a queue
 
+    Headers
+
+        X-Application-Key - The applications key
+
+
     URL Params
 
         queue_name - A UUID4 hex string to use as the queue name.
+        delete - (Optional) If set to false, the queue will be deleted
+                 but remain registered
 
     Example success response::
 
         {'status': 'ok'}
 
     """
-    app_key, queue_name = _extract_app_queue_info(request)
+    queue_name = request.matchdict['queue_name']
     storage = request.registry['backend_storage']
-    if request.params.get('delete') == 'false':
-        storage.truncate(queue_name)
-    else:
-        meta = request.registry['backend_metadata']
-        meta.remove_queue(app_key, queue_name)
-        storage.truncate(queue_name)
+    meta = request.registry['backend_metadata']
+    info = meta.queue_information(request.app_key, queue_name)
+    partitions = info['partitions']
+
+    for num in range(1, partitions + 1):
+        storage.truncate('%s-%s' % (queue_name, num))
+
+    if request.params.get('delete') != 'false':
+        meta.remove_queue(request.app_key, queue_name)
     return {'status': 'ok'}
 
 
 @queues.post(permission='new_message')
 def new_message(request):
     """Post a message to a queue
+
+    Headers
+
+        X-Application-Key - The applications key
+        X-Partition - (Optional) A specific partition number to
+                      insert the message into. Defaults to a random
+                      partition number for the amount of partitions
+                      registered.
 
     URL Params
 
@@ -116,20 +211,45 @@ def new_message(request):
 
     Example success response::
 
-        {'status': 'ok'}
+        {
+            'status': 'ok',
+            'key': '3a6592301e0911e190b1002500f0fa7c',
+            'partition': 1
+        }
 
     """
-    app_key, queue_name = _extract_app_queue_info(request)
-    if not request.body:
+    queue_name = request.matchdict['queue_name']
+    if len(request.body) <= 0:
         raise HTTPBadRequest("Failure to provide message body.")
+
+    if 'X-Partition' in request.headers:
+        try:
+            partition = int(request.headers['X-Partition'])
+        except (ValueError, TypeError):
+            return HTTPBadRequest("Invalid 'X-Partition' header value")
+    else:
+        meta = request.registry['backend_metadata']
+        info = meta.queue_information(request.app_key, queue_name)
+        partitions = info['partitions']
+        partition = random.randint(1, partitions)
+
     storage = request.registry['backend_storage']
-    storage.push(queue_name, request.POST['message'])
-    return {'status': 'ok'}
+    message_key = storage.push('%s-%s' % (queue_name, partition),
+                               request.body)
+    return {
+        'status': 'ok',
+        'key': message_key,
+        'partition': partition
+    }
 
 
-@queues.get()
+@queues.get(permission='view_message')
 def get_messages(request):
     """Get messages from a queue
+
+    Headers
+
+        X-Application-Key - The applications key
 
     URL Params
 
@@ -142,60 +262,51 @@ def get_messages(request):
         limit           - (`Optional`) Only return N amount of messages
         order           - (`Optional`) Order of messages, can be set to either
                           `ascending` or `descending`. Defaults to `descending`.
+        partition       - (Optional) A specific partition number to retrieve
+                          messages from. Defaults to retrieving messages from
+                          partition 1.
 
     Messages are returned in order of newest to oldest.
 
+    Example response::
+
+        {
+            'status': 'ok',
+            'messages': [
+                {
+                    'key': '3a6592301e0911e190b1002500f0fa7c',
+                    'body': 'jlaijwiel2432532jilj'
+                },
+                {
+                    'key': '3a8553d71e0911e19262002500f0fa7c',
+                    'body': 'ion12oibasdfjioawneilnf'
+                }
+            ]
+        }
+
     """
-    queue_name = _extract_queue_name(request)
-
-    limit = request.GET.get('limit')
-    if limit:
-        try:
-            limit = int(limit)
-        except ValueError:
-            raise HTTPBadRequest("Invalid limit param provided")
-
-    order = request.GET.get('order', 'descending')
-    if order and order not in ['ascending', 'descending']:
-        raise HTTPBadRequest("Invalid order param provided")
-
-    timestamp = request.GET.get('since_timestamp')
+    queue_name = request.matchdict['queue_name']
+    limit = valid_int(request.GET, 'limit')
+    timestamp = valid_int(request.GET, 'since_timestamp')
     if timestamp:
-        try:
-            timestamp = int(timestamp)
-        except ValueError:
-            raise HTTPBadRequest("Timestamp parameter must be an integer")
         try:
             timestamp = datetime.utcfromtimestamp(timestamp)
         except ValueError:
             raise HTTPBadRequest("Timestamp parameter is invalid")
 
+    order = request.GET.get('order', 'descending')
+    if order and order not in ['ascending', 'descending']:
+        raise HTTPBadRequest("Order parameter is invalid")
+
+    partition = 1
+    if 'partition' in request.GET:
+        try:
+            partition = int(request.GET['partition'])
+        except (ValueError, TypeError):
+            return HTTPBadRequest("Partition parameter is invalid")
+
     storage = request.registry['backend_storage']
-    # Retrieve and fixup the structure, avoid deserializing the
-    # JSON content from the db
-    messages = storage.retrieve(queue_name, limit, timestamp, order)
+    messages = storage.retrieve('%s-%s' (queue_name, partition), limit,
+                                timestamp, order)
     message_data = [{'key': key.hex, 'body': body} for key, body in messages]
-    envelope = json.dumps({'status': 'ok', 'messages': message_data})
-    return Response(body=envelope, content_type='application/json')
-
-
-## Utility extraction methods
-
-def _extract_app_key(headers):
-    app_key = headers.get('ApplicationKey')
-    if not app_key:
-        raise HTTPBadRequest("Failure to provide ApplicationKey")
-    return app_key
-
-
-def _extract_queue_name(request):
-    queue_name = request.matchdict.get('queue_name')
-    if not queue_name:
-        raise HTTPBadRequest("Failure to provide queue_name")
-    return queue_name
-
-
-def _extract_app_queue_info(request):
-    app_key, queue_name = _extract_app_key(request.headers), \
-        _extract_queue_name(request)
-    return app_key, queue_name
+    return {'status': 'ok', 'messages': message_data}

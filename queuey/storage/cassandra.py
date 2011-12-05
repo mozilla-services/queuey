@@ -46,6 +46,8 @@ from queuey.exceptions import QueueDoesNotExist
 from queuey.storage import MessageQueueBackend
 from queuey.storage import MetadataBackend
 
+LOCAL_QUORUM = pycassa.ConsistencyLevel.LOCAL_QUORUM
+
 
 def parse_hosts(raw_hosts):
     """Parses out hosts into a list"""
@@ -65,7 +67,7 @@ class CassandraQueueBackend(object):
     implements(MessageQueueBackend)
 
     def __init__(self, username=None, password=None, database='MessageStore',
-                 host='localhost'):
+                 host='localhost', delay=None):
         """Create a Cassandra backend for the Message Queue
 
         :param host: Hostname, accepts either an IP, hostname, hostname:port,
@@ -75,6 +77,9 @@ class CassandraQueueBackend(object):
         hosts = parse_hosts(host)
         self.pool = pool = pycassa.connect(database, hosts)
         self.store_fam = pycassa.ColumnFamily(pool, 'Stores')
+        self.store_fam.read_consistency_level = LOCAL_QUORUM
+        self.store_fam.write_consistency_level = LOCAL_QUORUM
+        self.delay = int(delay) if delay else None
 
     def retrieve(self, queue_name, limit=None, timestamp=None,
                  order="descending"):
@@ -90,7 +95,7 @@ class CassandraQueueBackend(object):
             kwargs['column_start'] = timestamp
 
         try:
-            results = self.store_fam.get(queue_name, **kwargs)
+            results = self.store_fam.get(key=queue_name, **kwargs)
         except pycassa.NotFoundException:
             return []
         results = results.items()
@@ -99,21 +104,28 @@ class CassandraQueueBackend(object):
     def push(self, queue_name, message, ttl=60 * 60 * 24 * 3):
         """Push a message onto the queue"""
         now = uuid.uuid1()
-        self.store_fam.insert(queue_name, {now: message}, ttl=ttl)
+        self.store_fam.insert(key=queue_name, columns={now: message}, ttl=ttl)
 
     def exists(self, queue_name):
         """Return whether the queue exists or not"""
         try:
-            return bool(self.store_fam.get(queue_name, column_count=1))
+            return bool(self.store_fam.get(key=queue_name, column_count=1))
         except pycassa.NotFoundException:
             return False
 
     def truncate(self, queue_name):
         """Remove all contents of the queue"""
         try:
-            self.store_fam.remove(queue_name)
+            self.store_fam.remove(key=queue_name)
         except pycassa.NotFoundException:
             pass
+
+    def count(self, queue_name):
+        """Return a count of the items in this queue"""
+        try:
+            return self.store_fam.get_count(key=queue_name)
+        except pycassa.NotFoundException:
+            raise QueueDoesNotExist
 
 
 class CassandraMetadata(object):
@@ -131,10 +143,12 @@ class CassandraMetadata(object):
         self.row_key = '__APPLICATIONS__'
         self.pool = pool = pycassa.connect(database, hosts)
         self.app_fam = pycassa.ColumnFamily(pool, 'Applications')
+        self.app_fam.write_consistency_level = LOCAL_QUORUM
+        self.app_fam.read_consistency_level = LOCAL_QUORUM
 
     def _verify_app_exists(self, application_name):
         try:
-            self.app_fam.get(self.row_key, columns=[application_name],
+            self.app_fam.get(key=self.row_key, columns=[application_name],
                              column_count=1)
         except pycassa.NotFoundException:
             raise ApplicationNotRegistered("%s is not registered" %
@@ -148,7 +162,7 @@ class CassandraMetadata(object):
 
         """
         try:
-            results = self.app_fam.get(self.row_key,
+            results = self.app_fam.get(key=self.row_key,
                                        columns=[application_name],
                                        column_count=1)
             if len(results) > 0:
@@ -158,26 +172,30 @@ class CassandraMetadata(object):
         except pycassa.NotFoundException:
             pass
         now = str(time.time())
-        self.app_fam.insert(self.row_key, {application_name: now})
+        self.app_fam.insert(key=self.row_key, columns={application_name: now})
 
     def register_queue(self, application_name, queue_name):
         """Register a queue"""
         # Determine if its registered already
         self._verify_app_exists(application_name)
         try:
-            results = self.app_fam.get(application_name, columns=[queue_name])
+            results = self.app_fam.get(key=application_name,
+                                       columns=[queue_name])
             if len(results) > 0:
                 # Already registered, and queue already exists
                 raise QueueAlreadyExists("%s already exists" % queue_name)
         except pycassa.NotFoundException:
             pass
         now = str(time.time())
-        self.app_fam.insert(application_name, {queue_name: now})
+        self.app_fam.insert(key=application_name, columns={queue_name: now})
 
     def remove_queue(self, application_name, queue_name):
         """Remove a queue"""
-        self._verify_app_exists(application_name)
+        self._verify_app_exists(key=application_name)
         try:
-            self.app_fam.remove(application_name, columns=[queue_name])
+            self.app_fam.remove(key=application_name, columns=[queue_name])
         except pycassa.NotFoundException:
             raise QueueDoesNotExist("%s is not registered" % queue_name)
+
+    def queue_information(self, application_name, queue_name):
+        """Return information on a registered queue"""

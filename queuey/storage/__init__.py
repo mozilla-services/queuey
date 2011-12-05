@@ -72,15 +72,31 @@ class MessageQueueBackend(Interface):
         """Retrieve messages from a queue
 
         :param queue_name: Queue name
-        :param type: string
+        :queue_name type: string
         :param limit: Amount of messages to retrieve
-        :param type: int
+        :limit type: int
         :param timestamp: Retrieve messages starting with this timestamp
-        :param type: datetime
+        :timestamp type: datetime
         :param order: Which order to traverse the messages. Defaults to
                       descending order.
-        :type order: ascending/descending
-        :param type: order
+        :order type: `ascending` or `descending`
+
+        :returns: A list of (timestamp, message_body) tuples
+        :rtype: list
+        :raises: :exc:`~queuey.exceptions.QueueDoesNotExist` if the
+                 queue does not exist
+
+        Example response::
+
+            [
+                ('aebb663d1d4311e1a65f002500f0fa7c', 'jiawefjilawe'),
+                ('ae45017a1d4311e19562002500f0fa7c', 'auwiofuweni3')
+            ]
+
+        .. note::
+
+            The message body is considered raw string data and should
+            have no encoding/decoding performed on it.
 
         """
 
@@ -91,20 +107,54 @@ class MessageQueueBackend(Interface):
         exist.
 
         :param queue_name: Queue name
-        :param type: string
+        :queue_name type: string
         :param message: Message to add to the queue
-        :param type: string
+        :message type: string
         :param ttl: Time to Live in seconds for the message, after this
                     period the message should be unavilable
-        :param type: int
+        :ttl type: int
+
+        :returns: The message key
+        :rtype: UUID hex
 
         """
 
     def exists(self, queue_name):
-        """Check to see if a queue of a given name exists"""
+        """Check to see if a queue of a given name exists
+
+        :param queue_name: Queue name
+        :queue_name type: string
+
+        :returns: Whether the queue exists.
+        :rtype: bool
+
+        """
 
     def truncate(self, queue_name):
-        """Remove all contents of the queue"""
+        """Remove all contents of the queue
+
+        :param queue_name: Queue name
+        :queue_name type: string
+
+        :returns: Whether the queue was truncated.
+        :rtype: bool
+        :raises: :exc:`~queuey.exceptions.QueueDoesNotExist` if the
+                 queue does not exist
+
+        """
+
+    def count(self, queue_name):
+        """Returns the amount of messages in the queue
+
+        :param queue_name: Queue name
+        :queue_name type: string
+
+        :returns: Message total
+        :rtype: int
+        :raises: :exc:`~queuey.exceptions.QueueDoesNotExist` if the
+                 queue does not exist
+
+        """
 
 
 class MetadataBackend(Interface):
@@ -122,29 +172,70 @@ class MetadataBackend(Interface):
     def register_application(self, application_name):
         """Register the application
 
-        If the application is already registered, the ApplicationExists
-        exception must be raised.
+        :param application_name: Name of the application
+        :application_name type: string
+
+        :returns: Whether the application was created
+        :rtype: bool
+        :raises: :exc:`~queuey.exceptions.ApplicationExists` if the
+                 application is already registered
 
         """
 
-    def register_queue(self, application_name, queue_name):
+    def register_queue(self, application_name, queue_name, partitions):
         """Register a queue for the given application
 
-        Must raise the ApplicationNotRegistered exception if the
-        application is not already registered when adding the queue.
+        Registers a queue for the application and when it was
+        created in seconds since the epoch, and how many partitions
+        should be allocated.
 
-        If a queue_name of this name already exists, then the
-        QueueAlreadyExists exception must be raised.
+        :param application_name: Name of the application
+        :application_name type: string
+        :param queue_name: Queue name
+        :queue_name type: string
+        :param partitions: Amount of partitions for the queue
+        :partitions type: int
+
+        :returns: Whether the queue was registered
+        :rtype: bool
+        :raises: :exc:`~queuey.exceptions.ApplicationNotRegistered` if
+                 the application is not registered.
 
         """
 
     def remove_queue(self, application_name, queue_name):
         """Remove a queue registration for the given application
 
-        Must raise the ApplicationNotRegistered exception if the
-        application is not already registered when deleting the queue.
+        :param application_name: Name of the application
+        :application_name type: string
+        :param queue_name: Queue name
+        :queue_name type: string
 
-        If a queue_name of this name does not exist, then the
-        QueueDoesNotExist exception must be raised.
+        :returns: Whether the queue was removed.
+        :rtype: bool
+        :raises: :exc:`~queuey.exceptions.ApplicationNotRegistered` if
+                 the application is not registered.
+
+        """
+
+    def queue_information(self, application_name, queue_name):
+        """Return information regarding the queue for the application
+
+        :param application_name: Name of the application
+        :application_name type: string
+        :param queue_name: Queue name
+        :queue_name type: string
+
+        :returns: Queue information
+        :rtype: dict
+        :raises: :exc:`~queuey.exceptions.QueueDoesNotExist` if the
+                 queue does not exist
+
+        Example response::
+
+            {
+                'created': 82989382,
+                'partitions': 20
+            }
 
         """
