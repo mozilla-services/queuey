@@ -64,8 +64,8 @@ $(BIN)/paster: lib $(BIN)/pip
 $(ZOOKEEPER):
 	mkdir -p bin
 	cd bin && \
-	curl --silent http://mirrors.ibiblio.org/apache//zookeeper/stable/zookeeper-3.3.3.tar.gz | tar -zvx
-	mv bin/zookeeper-3.3.3 bin/zookeeper
+	curl --silent http://mirrors.ibiblio.org/apache//zookeeper/stable/zookeeper-3.3.4.tar.gz | tar -zvx
+	mv bin/zookeeper-3.3.4 bin/zookeeper
 	cd bin/zookeeper && ant compile
 	cd bin/zookeeper/src/c && \
 	./configure && \
