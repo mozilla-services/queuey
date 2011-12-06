@@ -236,7 +236,7 @@ def new_message(request):
                                request.body)
     return {
         'status': 'ok',
-        'key': message_key,
+        'key': message_key.hex,
         'partition': partition
     }
 
@@ -304,7 +304,7 @@ def get_messages(request):
             return HTTPBadRequest("Partition parameter is invalid")
 
     storage = request.registry['backend_storage']
-    messages = storage.retrieve('%s-%s' (queue_name, partition), limit,
+    messages = storage.retrieve('%s-%s' % (queue_name, partition), limit,
                                 timestamp, order)
     message_data = [{'key': key.hex, 'body': body} for key, body in messages]
     return {'status': 'ok', 'messages': message_data}

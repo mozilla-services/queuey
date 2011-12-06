@@ -5,6 +5,7 @@ import os
 from nose.tools import raises
 
 from pyramid import testing
+from pyramid.httpexceptions import HTTPBadRequest
 from pyramid.util import DottedNameResolver
 
 dotted_resolver = DottedNameResolver(None)
@@ -42,7 +43,6 @@ class ViewTests(unittest.TestCase):
     def test_add_app_key_wrapper(self):
         from queuey.views import add_app_key
         from queuey.views import new_queue
-        from pyramid.httpexceptions import HTTPBadRequest
 
         app_key = uuid.uuid4().hex
         request = testing.DummyRequest(headers={'X-Application-Key': app_key})
@@ -69,8 +69,8 @@ class ViewTests(unittest.TestCase):
             new_view(None, request)
         testits()
 
-    def test_new_queue(self):
-        from queuey.views import new_queue
+    def test_new_queue_and_info(self):
+        from queuey.views import new_queue, get_queue
         app_key = uuid.uuid4().hex
         request = testing.DummyRequest()
         request.app_key = app_key
@@ -79,6 +79,21 @@ class ViewTests(unittest.TestCase):
         self.assertEqual(info['status'], 'ok')
         self.assertEqual(info['partitions'], 1)
         self.assertEqual(info['application_name'], 'notifications')
+
+        request.GET['queue_name'] = info['queue_name']
+        data = get_queue(request)
+        self.assertEqual(data['status'], 'ok')
+        self.assertEqual(data['count'], 0)
+        self.assertEqual(data['application_name'], 'notifications')
+
+        request = testing.DummyRequest()
+        request.app_key = app_key
+        request.app_name = 'notifications'
+
+        @raises(HTTPBadRequest)
+        def testit():
+            get_queue(request)
+        testit()
 
     def test_delete_queue(self):
         from queuey.views import new_queue, delete_queue
@@ -97,3 +112,36 @@ class ViewTests(unittest.TestCase):
         request.matchdict = {'queue_name': queue_name}
         info = delete_queue(request)
         self.assertEqual(info['status'], 'ok')
+
+    def test_new_messages_and_get(self):
+        from queuey.views import new_queue, new_message, get_messages
+        app_key = uuid.uuid4().hex
+        request = testing.DummyRequest()
+        request.app_key = app_key
+        request.app_name = 'notifications'
+        info = new_queue(request)
+        self.assertEqual(info['status'], 'ok')
+
+        queue_name = info['queue_name']
+        request.matchdict['queue_name'] = queue_name
+
+        @raises(HTTPBadRequest)
+        def testit():
+            request.body = ''
+            new_message(request)
+        testit()
+
+        request.body = 'this is a message!'
+        info = new_message(request)
+        self.assertEqual(info['status'], 'ok')
+        self.assertEqual(info['partition'], 1)
+        assert 'key' in info
+
+        # Get the message
+        request = testing.DummyRequest()
+        request.app_key = app_key
+        request.app_name = 'notifications'
+        request.matchdict['queue_name'] = queue_name
+        info = get_messages(request)
+        self.assertEqual(info['status'], 'ok')
+        self.assertEqual(info['messages'][0]['body'], 'this is a message!')
