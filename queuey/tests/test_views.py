@@ -39,33 +39,61 @@ class ViewTests(unittest.TestCase):
     def tearDown(self):
         testing.tearDown()
 
+    def test_add_app_key_wrapper(self):
+        from queuey.views import add_app_key
+        from queuey.views import new_queue
+        from pyramid.httpexceptions import HTTPBadRequest
+
+        app_key = uuid.uuid4().hex
+        request = testing.DummyRequest(headers={'X-Application-Key': app_key})
+        request.registry['app_keys'] = {app_key: 'notty'}
+
+        def view_wrap(context, request):
+            return new_queue(request)
+        new_view = add_app_key(view_wrap)
+        info = new_view(None, request)
+        self.assertEqual(info['status'], 'ok')
+        self.assertEqual(info['partitions'], 1)
+        self.assertEqual(info['application_name'], 'notty')
+
+        @raises(HTTPBadRequest)
+        def testit():
+            request = testing.DummyRequest()
+            new_view(None, request)
+        testit()
+
+        @raises(HTTPBadRequest)
+        def testits():
+            request = testing.DummyRequest(headers={'X-Application-Key': app_key})
+            request.registry['app_keys'] = {}
+            new_view(None, request)
+        testits()
+
     def test_new_queue(self):
         from queuey.views import new_queue
         app_key = uuid.uuid4().hex
-        request = testing.DummyRequest(headers={'ApplicationKey': app_key})
+        request = testing.DummyRequest()
+        request.app_key = app_key
+        request.app_name = 'notifications'
         info = new_queue(request)
         self.assertEqual(info['status'], 'ok')
+        self.assertEqual(info['partitions'], 1)
+        self.assertEqual(info['application_name'], 'notifications')
 
     def test_delete_queue(self):
         from queuey.views import new_queue, delete_queue
         app_key = uuid.uuid4().hex
-        request = testing.DummyRequest(headers={'ApplicationKey': app_key})
+        request = testing.DummyRequest()
+        request.app_key = app_key
+        request.app_name = 'notifications'
         info = new_queue(request)
         self.assertEqual(info['status'], 'ok')
         queue_name = info['queue_name']
 
         # Now delete it
-        request = testing.DummyRequest(headers={'ApplicationKey': app_key})
+        request = testing.DummyRequest()
+        request.app_key = app_key
+        request.app_name = 'notifications'
         request.matchdict = {'queue_name': queue_name}
         info = delete_queue(request)
         self.assertEqual(info['status'], 'ok')
-
-        # Ensure that we throw an error if the queue doesn't exist
-        from queuey.exceptions import ApplicationNotRegistered
-
-        @raises(ApplicationNotRegistered)
-        def test_it():
-            app_key = uuid.uuid4().hex
-            request = testing.DummyRequest(headers={'ApplicationKey': app_key})
-            request.matchdict = {'queue_name': queue_name}
-        test_it()
