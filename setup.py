@@ -15,12 +15,16 @@ setup(
         'pycassa',
     ],
 
+    tests_requires=[
+        'mock>=0.7.2'
+    ],
+
     entry_points="""
         [paste.app_factory]
         main = queuey:main
     """,
 
-    test_suite = 'nose.collector',
+    test_suite='nose.collector',
 
     author="Ben Bangert",
     author_email="bbangert@mozilla.com",
