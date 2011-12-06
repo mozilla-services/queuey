@@ -1,8 +1,10 @@
 import unittest
 import uuid
+import time
 import os
 
 from nose.tools import raises
+import mock
 
 
 def setup_module():
@@ -14,10 +16,10 @@ def setup_module():
 
 
 class TestCassandraStore(unittest.TestCase):
-    def _makeOne(self):
+    def _makeOne(self, **kwargs):
         from queuey.storage.cassandra import CassandraQueueBackend
         host = os.environ.get('TEST_CASSANDRA_HOST', 'localhost')
-        return CassandraQueueBackend(host)
+        return CassandraQueueBackend(host, **kwargs)
 
     def test_parsehosts(self):
         from queuey.storage.cassandra import parse_hosts
@@ -42,7 +44,50 @@ class TestCassandraStore(unittest.TestCase):
         existing = backend.retrieve(queue_name)
         self.assertEqual(existing[0][1], payload)
 
+    def test_delay(self):
+        backend = self._makeOne(delay=10)
+        payload = 'a rather boring payload'
+        queue_name = uuid.uuid4().hex
+        backend.push(queue_name, payload)
+        existing = backend.retrieve(queue_name)
+        self.assertEqual(existing, [])
+        time_func = time.time
+        with mock.patch('time.time') as mock_time:
+            mock_time.return_value = time_func() + 9
+            existing = backend.retrieve(queue_name)
+            self.assertEqual(existing, [])
+            mock_time.return_value = time_func() + 10
+            existing = backend.retrieve(queue_name)
+            self.assertEqual(existing[0][1], payload)
+
     def test_message_ordering(self):
+        backend = self._makeOne()
+        payload = 'a rather boring payload'
+        another = 'another payload'
+        queue_name = uuid.uuid4().hex
+        backend.push(queue_name, payload)
+        last = backend.push(queue_name, another)
+        existing = backend.retrieve(queue_name)
+        self.assertEqual(2, len(existing))
+        self.assertEqual(existing[1][1], payload)
+
+        existing = backend.retrieve(queue_name, order='ascending')
+        self.assertEqual(existing[1][1], another)
+
+        # Add a limit
+        existing = backend.retrieve(queue_name, limit=1)
+        self.assertEqual(existing[0][1], another)
+        self.assertEqual(len(existing), 1)
+
+        # Add a timestamp
+        second_value = (last.time - 0x01b21dd213814000L) * 100 / 1e9
+        second_value = second_value
+        existing = backend.retrieve(queue_name, timestamp=second_value,
+                                    order='ascending')
+        self.assertEqual(existing[0][1], another)
+        self.assertEqual(len(existing), 1)
+
+    def test_message_removal(self):
         backend = self._makeOne()
         payload = 'a rather boring payload'
         another = 'another payload'
@@ -51,10 +96,21 @@ class TestCassandraStore(unittest.TestCase):
         backend.push(queue_name, another)
         existing = backend.retrieve(queue_name)
         self.assertEqual(2, len(existing))
-        self.assertEqual(existing[1][1], payload)
 
-        existing = backend.retrieve(queue_name, order='ascending')
-        self.assertEqual(existing[1][1], another)
+        backend.truncate(queue_name)
+        existing = backend.retrieve(queue_name)
+        self.assertEqual(0, len(existing))
+
+    def test_message_counting(self):
+        backend = self._makeOne()
+        payload = 'a rather boring payload'
+        queue_name = uuid.uuid4().hex
+        for x in range(4):
+            backend.push(queue_name, payload)
+            self.assertEqual(x + 1, backend.count(queue_name))
+
+        # Test non-existing row
+        self.assertEqual(backend.count('no row'), 0)
 
     def test_message_addition(self):
         backend = self._makeOne()
@@ -97,12 +153,12 @@ class TestCassandraMetadata(unittest.TestCase):
         from queuey.exceptions import QueueAlreadyExists
         backend = self._makeOne()
         backend.register_application('myapp')
-        backend.register_queue('myapp', 'fredrick')
+        backend.register_queue('myapp', 'fredrick', 1)
 
         # Ensure we get an exception on a repeat
         @raises(QueueAlreadyExists)
         def testit():
-            backend.register_queue('myapp', 'fredrick')
+            backend.register_queue('myapp', 'fredrick', 1)
         testit()
 
     def test_add_queue_not_regged(self):
@@ -111,5 +167,38 @@ class TestCassandraMetadata(unittest.TestCase):
 
         @raises(ApplicationNotRegistered)
         def testit():
-            backend.register_queue('myapp', 'fredrick')
+            backend.register_queue('myapp', 'fredrick', 1)
+        testit()
+
+    def test_remove_queue(self):
+        from queuey.exceptions import ApplicationNotRegistered
+        from queuey.exceptions import QueueDoesNotExist
+        backend = self._makeOne()
+
+        @raises(ApplicationNotRegistered)
+        def testit():
+            backend.remove_queue('myapp', 'nosuchqueue')
+        testit()
+
+        backend.register_application('myapp')
+        backend.register_queue('myapp', 'fredrick', 1)
+        backend.remove_queue('myapp', 'fredrick')
+
+        @raises(QueueDoesNotExist)
+        def testits():
+            backend.remove_queue('myapp', 'nosuchqueue')
+        testits()
+
+    def test_queue_info(self):
+        from queuey.exceptions import QueueDoesNotExist
+        backend = self._makeOne()
+        backend.register_application('myapp')
+        backend.register_queue('myapp', 'fredrick', 3)
+
+        info = backend.queue_information('myapp', 'fredrick')
+        self.assertEqual(info['partitions'], 3)
+
+        @raises(QueueDoesNotExist)
+        def testit():
+            backend.queue_information('myapp', 'asdfasdf')
         testit()
