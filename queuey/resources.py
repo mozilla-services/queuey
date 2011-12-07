@@ -7,6 +7,8 @@ class Root(object):
             (Allow, Authenticated, 'create_queue'),
             (Allow, Authenticated, 'delete_queue'),
             (Allow, Authenticated, 'new_message'),
+            (Allow, Authenticated, 'view_queue'),
+            (Allow, Authenticated, 'view_message'),
         ]
 
     def __init__(self, request):
