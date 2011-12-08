@@ -54,3 +54,13 @@ def valid_int(dct, name):
         return int(dct[name])
     except (ValueError, TypeError):
         raise HTTPBadRequest("%s must be an integer")
+
+
+def valid_float(dct, name):
+    """Gets the name from the dct and ensures its an float if present"""
+    if name not in dct:
+        return None
+    try:
+        return float(dct[name])
+    except (ValueError, TypeError):
+        raise HTTPBadRequest("%s must be an integer")

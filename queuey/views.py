@@ -33,7 +33,6 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
-from datetime import datetime
 import random
 import uuid
 
@@ -43,6 +42,7 @@ from pyramid.httpexceptions import HTTPBadRequest
 from queuey.exceptions import ApplicationNotRegistered
 from queuey.validators import partition_check
 from queuey.validators import valid_int
+from queuey.validators import valid_float
 
 
 def add_app_key(view):
@@ -76,7 +76,7 @@ def new_queue(request):
 
     POST params
 
-        partitions - (Optional) How many partitions the queue should
+        partitions - (`Optional`) How many partitions the queue should
                      have (defaults to 1)
 
     Returns a JSON response indicating the status, the UUID4 hex
@@ -119,7 +119,7 @@ def get_queue(request):
 
     GET params
 
-        queue_name (optional) - The name of a specific queue to retrieve
+        queue_name (`Optional`) - The name of a specific queue to retrieve
                                 information about
 
     Returns a JSON response indicating the status, and the information
@@ -165,7 +165,7 @@ def delete_queue(request):
     URL Params
 
         queue_name - A UUID4 hex string to use as the queue name.
-        delete - (Optional) If set to false, the queue will be deleted
+        delete - (`Optional`) If set to false, the queue will be deleted
                  but remain registered
 
     Example success response::
@@ -194,7 +194,7 @@ def new_message(request):
     Headers
 
         X-Application-Key - The applications key
-        X-Partition - (Optional) A specific partition number to
+        X-Partition - (`Optional`) A specific partition number to
                       insert the message into. Defaults to a random
                       partition number for the amount of partitions
                       registered.
@@ -260,7 +260,7 @@ def get_messages(request):
         limit           - (`Optional`) Only return N amount of messages
         order           - (`Optional`) Order of messages, can be set to either
                           `ascending` or `descending`. Defaults to `descending`.
-        partition       - (Optional) A specific partition number to retrieve
+        partition       - (`Optional`) A specific partition number to retrieve
                           messages from. Defaults to retrieving messages from
                           partition 1.
 
@@ -285,12 +285,7 @@ def get_messages(request):
     """
     queue_name = request.matchdict['queue_name']
     limit = valid_int(request.GET, 'limit')
-    timestamp = valid_int(request.GET, 'since_timestamp')
-    if timestamp:
-        try:
-            timestamp = datetime.utcfromtimestamp(timestamp)
-        except ValueError:
-            raise HTTPBadRequest("Timestamp parameter is invalid")
+    timestamp = valid_float(request.GET, 'since_timestamp')
 
     order = request.GET.get('order', 'descending')
     if order and order not in ['ascending', 'descending']:

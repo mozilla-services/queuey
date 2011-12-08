@@ -1,6 +1,7 @@
 import unittest
 import uuid
 import os
+import time
 
 from nose.tools import raises
 
@@ -145,3 +146,30 @@ class ViewTests(unittest.TestCase):
         info = get_messages(request)
         self.assertEqual(info['status'], 'ok')
         self.assertEqual(info['messages'][0]['body'], 'this is a message!')
+
+        # Add another message, and fetch JUST that one
+        now = time.time()
+        request.body = 'this is another message!'
+        info = new_message(request)
+        self.assertEqual(info['status'], 'ok')
+        self.assertEqual(info['partition'], 1)
+        assert 'key' in info
+
+        request = testing.DummyRequest()
+        request.app_key = app_key
+        request.app_name = 'notifications'
+        request.matchdict['queue_name'] = queue_name
+        request.GET['since_timestamp'] = str(now)
+        request.GET['order'] = 'ascending'
+        info = get_messages(request)
+        self.assertEqual(info['status'], 'ok')
+        self.assertEqual(info['messages'][0]['body'], 'this is another message!')
+        self.assertEqual(len(info['messages']), 1)
+
+        del request.GET['since_timestamp']
+        request.GET['order'] = 'ascending'
+        request.GET['limit'] = '1'
+        info = get_messages(request)
+        self.assertEqual(info['status'], 'ok')
+        self.assertEqual(info['messages'][0]['body'], 'this is a message!')
+        self.assertEqual(len(info['messages']), 1)
