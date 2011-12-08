@@ -284,19 +284,13 @@ def get_messages(request):
 
     """
     queue_name = request.matchdict['queue_name']
-    limit = valid_int(request.GET, 'limit')
+    limit = valid_int(request.GET, 'limit') or 100
     timestamp = valid_float(request.GET, 'since_timestamp')
+    partition = valid_int(request.GET, 'partition') or 1
 
     order = request.GET.get('order', 'descending')
     if order and order not in ['ascending', 'descending']:
         raise HTTPBadRequest("Order parameter is invalid")
-
-    partition = 1
-    if 'partition' in request.GET:
-        try:
-            partition = int(request.GET['partition'])
-        except (ValueError, TypeError):
-            return HTTPBadRequest("Partition parameter is invalid")
 
     storage = request.registry['backend_storage']
     messages = storage.retrieve('%s-%s' % (queue_name, partition), limit,

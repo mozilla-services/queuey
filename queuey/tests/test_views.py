@@ -159,7 +159,7 @@ class ViewTests(unittest.TestCase):
         request.app_key = app_key
         request.app_name = 'notifications'
         request.matchdict['queue_name'] = queue_name
-        request.GET['since_timestamp'] = str(now)
+        request.GET['since_timestamp'] = repr(now)
         request.GET['order'] = 'ascending'
         info = get_messages(request)
         self.assertEqual(info['status'], 'ok')
@@ -173,3 +173,40 @@ class ViewTests(unittest.TestCase):
         self.assertEqual(info['status'], 'ok')
         self.assertEqual(info['messages'][0]['body'], 'this is a message!')
         self.assertEqual(len(info['messages']), 1)
+
+    def test_new_messages_with_partitions(self):
+        from queuey.views import new_queue, new_message, get_messages
+        app_key = uuid.uuid4().hex
+        request = testing.DummyRequest()
+        request.app_key = app_key
+        request.app_name = 'notifications'
+        request.POST['partitions'] = 5
+        info = new_queue(request)
+        self.assertEqual(info['status'], 'ok')
+
+        queue_name = info['queue_name']
+        request.matchdict['queue_name'] = queue_name
+
+        request.body = 'this is a message!'
+        info = new_message(request)
+        self.assertEqual(info['status'], 'ok')
+        part = info['partition']
+        assert 'key' in info
+
+        # Get the message
+        request = testing.DummyRequest()
+        request.app_key = app_key
+        request.app_name = 'notifications'
+        request.matchdict['queue_name'] = queue_name
+        request.GET['partition'] = str(part)
+        info = get_messages(request)
+        self.assertEqual(info['status'], 'ok')
+        self.assertEqual(info['messages'][0]['body'], 'this is a message!')
+
+        # Invalid partition
+        request.GET['partition'] = 'blah'
+
+        @raises(HTTPBadRequest)
+        def testit():
+            get_messages(request)
+        testit()
