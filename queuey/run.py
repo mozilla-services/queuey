@@ -50,7 +50,7 @@ ini_file = os.path.join('/etc', 'queuey', 'production.ini')
 ini_file = os.path.abspath(os.environ.get('INI_FILE', ini_file))
 
 # running the app using Paste
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     # setting up logging
     try:
         fileConfig(ini_file)

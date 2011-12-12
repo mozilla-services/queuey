@@ -216,8 +216,16 @@ class ViewTests(unittest.TestCase):
             request.GET['since_timestamp'] = 'smith'
             get_messages(request)
         testbadfloat()
-
         del request.GET['since_timestamp']
+
+        # Bad order
+        @raises(HTTPBadRequest)
+        def testbadorder():
+            request.GET['order'] = 'backwards'
+            get_messages(request)
+        testbadorder()
+        del request.GET['order']
+
         request.GET['order'] = 'ascending'
         request.GET['limit'] = '1'
         info = get_messages(request)
