@@ -224,7 +224,7 @@ def new_message(request):
         try:
             partition = int(request.headers['X-Partition'])
         except (ValueError, TypeError):
-            return HTTPBadRequest("Invalid 'X-Partition' header value")
+            raise HTTPBadRequest("Invalid 'X-Partition' header value")
     else:
         meta = request.registry['backend_metadata']
         info = meta.queue_information(request.app_key, queue_name)

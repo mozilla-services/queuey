@@ -92,6 +92,15 @@ class ViewTests(unittest.TestCase):
         request.app_name = 'notifications'
 
         @raises(HTTPBadRequest)
+        def testbadpartition():
+            request = testing.DummyRequest()
+            request.app_key = app_key
+            request.app_name = 'notifications'
+            request.POST['partitions'] = 'fred'
+            new_queue(request)
+        testbadpartition()
+
+        @raises(HTTPBadRequest)
         def testit():
             get_queue(request)
         testit()
@@ -166,6 +175,13 @@ class ViewTests(unittest.TestCase):
         self.assertEqual(info['messages'][0]['body'], 'this is another message!')
         self.assertEqual(len(info['messages']), 1)
 
+        # Bad float
+        @raises(HTTPBadRequest)
+        def testbadfloat():
+            request.GET['since_timestamp'] = 'smith'
+            get_messages(request)
+        testbadfloat()
+
         del request.GET['since_timestamp']
         request.GET['order'] = 'ascending'
         request.GET['limit'] = '1'
@@ -187,6 +203,20 @@ class ViewTests(unittest.TestCase):
         queue_name = info['queue_name']
         request.matchdict['queue_name'] = queue_name
 
+        request.body = 'this is a message!'
+        request.headers['X-Partition'] = '2'
+        info = new_message(request)
+        self.assertEqual(info['status'], 'ok')
+        self.assertEqual(info['partition'], 2)
+
+        # Bad partition
+        @raises(HTTPBadRequest)
+        def badpartitionheader():
+            request.headers['X-Partition'] = 'smith'
+            new_message(request)
+        badpartitionheader()
+
+        del request.headers['X-Partition']
         request.body = 'this is a message!'
         info = new_message(request)
         self.assertEqual(info['status'], 'ok')
