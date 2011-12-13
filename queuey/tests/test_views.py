@@ -76,41 +76,19 @@ class ViewTests(unittest.TestCase):
     def tearDown(self):
         testing.tearDown()
 
-    def test_add_app_key_wrapper(self):
-        from queuey.views import add_app_key
+    def test_bad_app_key(self):
         from queuey.views import new_queue
-
         app_key = uuid.uuid4().hex
-        request = testing.DummyRequest(headers={'X-Application-Key': app_key})
-        request.registry['app_keys'] = {app_key: 'notty'}
-
-        def view_wrap(context, request):
-            return new_queue(request)
-        new_view = add_app_key(view_wrap)
-        info = new_view(None, request)
-        self.assertEqual(info['status'], 'ok')
-        self.assertEqual(info['partitions'], 1)
-        self.assertEqual(info['application_name'], 'notty')
-
-        @raises(HTTPBadRequest)
-        def testit():
-            request = testing.DummyRequest()
-            new_view(None, request)
-        testit()
-
-        @raises(HTTPBadRequest)
-        def testits():
-            request = testing.DummyRequest(headers={'X-Application-Key': app_key})
-            request.registry['app_keys'] = {}
-            new_view(None, request)
-        testits()
+        request = testing.DummyRequest(headers={'X-Application-Key': 'ff'})
+        request.registry['app_keys'] = {app_key: 'notifications'}
+        info = new_queue(request)
+        assert "You must provide a valid application key" in info.body
 
     def test_new_queue_and_info(self):
         from queuey.views import new_queue, get_queue
         app_key = uuid.uuid4().hex
-        request = testing.DummyRequest()
-        request.app_key = app_key
-        request.app_name = 'notifications'
+        request = testing.DummyRequest(headers={'X-Application-Key': 'ff'})
+        request.registry['app_keys'] = {'ff': 'notifications'}
         info = new_queue(request)
         self.assertEqual(info['status'], 'ok')
         self.assertEqual(info['partitions'], 1)
@@ -126,34 +104,46 @@ class ViewTests(unittest.TestCase):
         request.app_key = app_key
         request.app_name = 'notifications'
 
-        @raises(HTTPBadRequest)
-        def testbadpartition():
-            request = testing.DummyRequest()
-            request.app_key = app_key
-            request.app_name = 'notifications'
-            request.POST['partitions'] = 'fred'
-            new_queue(request)
-        testbadpartition()
+        # Bad queue
+        data = get_queue(request)
+        assert "No queue_name specified" in data.body
 
-        @raises(HTTPBadRequest)
-        def testit():
-            get_queue(request)
-        testit()
+        # bad partition
+        request = testing.DummyRequest()
+        request.app_key = app_key
+        request.app_name = 'notifications'
+        request.POST['partitions'] = 'fred'
+        resp = new_queue(request)
+        assert 'Partitions parameter is invalid' in resp.body
 
     def test_delete_queue(self):
         from queuey.views import new_queue, delete_queue
         app_key = uuid.uuid4().hex
-        request = testing.DummyRequest()
-        request.app_key = app_key
-        request.app_name = 'notifications'
+        request = testing.DummyRequest(headers={'X-Application-Key': app_key})
+        request.registry['app_keys'] = {app_key: 'notifications'}
         info = new_queue(request)
         self.assertEqual(info['status'], 'ok')
         queue_name = info['queue_name']
 
+        # Delete with bad delete value
+        request = testing.DummyRequest(headers={'X-Application-Key': app_key})
+        request.registry['app_keys'] = {app_key: 'notifications'}
+        request.matchdict = {'queue_name': queue_name}
+        request.GET['delete'] = 'fred'
+        info = delete_queue(request)
+        assert "Delete must be 'false' if specified" in info.body
+
+        # Test truncate first
+        request = testing.DummyRequest(headers={'X-Application-Key': app_key})
+        request.registry['app_keys'] = {app_key: 'notifications'}
+        request.matchdict = {'queue_name': queue_name}
+        request.GET['delete'] = 'false'
+        info = delete_queue(request)
+        self.assertEqual(info['status'], 'ok')
+
         # Now delete it
-        request = testing.DummyRequest()
-        request.app_key = app_key
-        request.app_name = 'notifications'
+        request = testing.DummyRequest(headers={'X-Application-Key': app_key})
+        request.registry['app_keys'] = {app_key: 'notifications'}
         request.matchdict = {'queue_name': queue_name}
         info = delete_queue(request)
         self.assertEqual(info['status'], 'ok')
@@ -161,21 +151,21 @@ class ViewTests(unittest.TestCase):
     def test_new_messages_and_get(self):
         from queuey.views import new_queue, new_message, get_messages
         app_key = uuid.uuid4().hex
-        request = testing.DummyRequest()
-        request.app_key = app_key
-        request.app_name = 'notifications'
+        request = testing.DummyRequest(headers={'X-Application-Key': app_key})
+        request.registry['app_keys'] = {app_key: 'notifications'}
         info = new_queue(request)
         self.assertEqual(info['status'], 'ok')
 
         queue_name = info['queue_name']
         request.matchdict['queue_name'] = queue_name
 
-        @raises(HTTPBadRequest)
-        def testit():
-            request.body = ''
-            new_message(request)
-        testit()
+        request.body = ''
+        info = new_message(request)
+        assert 'No body content present' in info.body
 
+        request = testing.DummyRequest(headers={'X-Application-Key': app_key})
+        request.registry['app_keys'] = {app_key: 'notifications'}
+        request.matchdict['queue_name'] = queue_name
         request.body = 'this is a message!'
         info = new_message(request)
         self.assertEqual(info['status'], 'ok')
@@ -183,9 +173,8 @@ class ViewTests(unittest.TestCase):
         assert 'key' in info
 
         # Get the message
-        request = testing.DummyRequest()
-        request.app_key = app_key
-        request.app_name = 'notifications'
+        request = testing.DummyRequest(headers={'X-Application-Key': app_key})
+        request.registry['app_keys'] = {app_key: 'notifications'}
         request.matchdict['queue_name'] = queue_name
         info = get_messages(request)
         self.assertEqual(info['status'], 'ok')
@@ -199,9 +188,8 @@ class ViewTests(unittest.TestCase):
         self.assertEqual(info['partition'], 1)
         assert 'key' in info
 
-        request = testing.DummyRequest()
-        request.app_key = app_key
-        request.app_name = 'notifications'
+        request = testing.DummyRequest(headers={'X-Application-Key': app_key})
+        request.registry['app_keys'] = {app_key: 'notifications'}
         request.matchdict['queue_name'] = queue_name
         request.GET['since_timestamp'] = repr(now)
         request.GET['order'] = 'ascending'
@@ -211,21 +199,22 @@ class ViewTests(unittest.TestCase):
         self.assertEqual(len(info['messages']), 1)
 
         # Bad float
-        @raises(HTTPBadRequest)
-        def testbadfloat():
-            request.GET['since_timestamp'] = 'smith'
-            get_messages(request)
-        testbadfloat()
+        request.GET['since_timestamp'] = 'smith'
+        info = get_messages(request)
+        assert 'since_timestamp must be a float' in info.body
         del request.GET['since_timestamp']
 
         # Bad order
-        @raises(HTTPBadRequest)
-        def testbadorder():
-            request.GET['order'] = 'backwards'
-            get_messages(request)
-        testbadorder()
-        del request.GET['order']
+        request = testing.DummyRequest(headers={'X-Application-Key': app_key})
+        request.registry['app_keys'] = {app_key: 'notifications'}
+        request.matchdict['queue_name'] = queue_name
+        request.GET['order'] = 'backwards'
+        info = get_messages(request)
+        assert 'Order parameter must be either' in info.body
 
+        request = testing.DummyRequest(headers={'X-Application-Key': app_key})
+        request.registry['app_keys'] = {app_key: 'notifications'}
+        request.matchdict['queue_name'] = queue_name
         request.GET['order'] = 'ascending'
         request.GET['limit'] = '1'
         info = get_messages(request)
@@ -236,9 +225,8 @@ class ViewTests(unittest.TestCase):
     def test_new_messages_with_partitions(self):
         from queuey.views import new_queue, new_message, get_messages
         app_key = uuid.uuid4().hex
-        request = testing.DummyRequest()
-        request.app_key = app_key
-        request.app_name = 'notifications'
+        request = testing.DummyRequest(headers={'X-Application-Key': app_key})
+        request.registry['app_keys'] = {app_key: 'notifications'}
         request.POST['partitions'] = 5
         info = new_queue(request)
         self.assertEqual(info['status'], 'ok')
@@ -253,13 +241,13 @@ class ViewTests(unittest.TestCase):
         self.assertEqual(info['partition'], 2)
 
         # Bad partition
-        @raises(HTTPBadRequest)
-        def badpartitionheader():
-            request.headers['X-Partition'] = 'smith'
-            new_message(request)
-        badpartitionheader()
+        request.headers['X-Partition'] = 'smith'
+        info = new_message(request)
+        assert "The 'X-Partition' header must be an integer" in info.body
 
-        del request.headers['X-Partition']
+        request = testing.DummyRequest(headers={'X-Application-Key': app_key})
+        request.registry['app_keys'] = {app_key: 'notifications'}
+        request.matchdict['queue_name'] = queue_name
         request.body = 'this is a message!'
         info = new_message(request)
         self.assertEqual(info['status'], 'ok')
@@ -267,9 +255,8 @@ class ViewTests(unittest.TestCase):
         assert 'key' in info
 
         # Get the message
-        request = testing.DummyRequest()
-        request.app_key = app_key
-        request.app_name = 'notifications'
+        request = testing.DummyRequest(headers={'X-Application-Key': app_key})
+        request.registry['app_keys'] = {app_key: 'notifications'}
         request.matchdict['queue_name'] = queue_name
         request.GET['partition'] = str(part)
         info = get_messages(request)
@@ -279,7 +266,5 @@ class ViewTests(unittest.TestCase):
         # Invalid partition
         request.GET['partition'] = 'blah'
 
-        @raises(HTTPBadRequest)
-        def testit():
-            get_messages(request)
-        testit()
+        info = get_messages(request)
+        assert "partition must be an integer" in info.body

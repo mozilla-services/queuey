@@ -40,33 +40,24 @@ from cornice.service import Service
 from pyramid.httpexceptions import HTTPBadRequest
 
 from queuey.exceptions import ApplicationNotRegistered
+from queuey.validators import appkey_check
+from queuey.validators import delete_check
+from queuey.validators import message_get_check
+from queuey.validators import messagebody_check
+from queuey.validators import queuename_check
 from queuey.validators import partition_check
+from queuey.validators import partionheader_check
 from queuey.validators import valid_int
 from queuey.validators import valid_float
 
 
-def add_app_key(view):
-    def app_key_wrapper(context, request):
-        if 'X-Application-Key' not in request.headers:
-            raise HTTPBadRequest("No 'X-Application-Key' header found")
-        app_key = request.headers['X-Application-Key']
-        app_name = request.registry['app_keys'].get(app_key)
-        if not app_name:
-            raise HTTPBadRequest("Bad Application Key")
-        request.app_name = app_name
-        request.app_key = app_key
-        return view(context, request)
-    return app_key_wrapper
-
-
 # Services
-message_queue = Service(name='message_queues', path='/queue/',
-                        decorator=add_app_key)
-queues = Service(name='queues', path='/queue/{queue_name:[a-z0-9]{32}}/',
-                 decorator=add_app_key)
+message_queue = Service(name='message_queues', path='/queue/')
+queues = Service(name='queues', path='/queue/{queue_name:[a-z0-9]{32}}/')
 
 
-@message_queue.post(permission='create_queue')
+@message_queue.post(permission='create_queue',
+                    validator=(appkey_check, partition_check))
 def new_queue(request):
     """Create a new queue
 
@@ -92,7 +83,7 @@ def new_queue(request):
         }
 
     """
-    partitions = partition_check(request)
+    partitions = request.validated['partitions']
     meta = request.registry['backend_metadata']
     queue_name = uuid.uuid4().hex
     try:
@@ -109,7 +100,8 @@ def new_queue(request):
     }
 
 
-@message_queue.get(permission='view_queue')
+@message_queue.get(permission='view_queue',
+                   validator=(appkey_check, queuename_check))
 def get_queue(request):
     """Get queue information
 
@@ -117,10 +109,10 @@ def get_queue(request):
 
         X-Application-Key - The applications key
 
-    GET params
+    Query Params
 
-        queue_name (`Optional`) - The name of a specific queue to retrieve
-                                information about
+        queue_name - The name of a specific queue to retrieve
+                     information about
 
     Returns a JSON response indicating the status, and the information
     about the queue.
@@ -137,10 +129,7 @@ def get_queue(request):
         }
 
     """
-    queue_name = request.GET.get('queue_name')
-    if not queue_name:
-        raise HTTPBadRequest("No queue_name provided")
-
+    queue_name = request.validated['queue_name']
     meta = request.registry['backend_metadata']
     storage = request.registry['backend_storage']
     queue_info = meta.queue_information(request.app_key, queue_name)
@@ -153,7 +142,8 @@ def get_queue(request):
     return queue_info
 
 
-@queues.delete(permission='delete_queue')
+@queues.delete(permission='delete_queue',
+               validator=(appkey_check, delete_check))
 def delete_queue(request):
     """Delete a queue
 
@@ -161,10 +151,12 @@ def delete_queue(request):
 
         X-Application-Key - The applications key
 
-
     URL Params
 
         queue_name - A UUID4 hex string to use as the queue name.
+
+    Query Params
+
         delete - (`Optional`) If set to false, the queue will be deleted
                  but remain registered
 
@@ -182,12 +174,13 @@ def delete_queue(request):
     for num in range(1, partitions + 1):
         storage.truncate('%s-%s' % (queue_name, num))
 
-    if request.params.get('delete') != 'false':
+    if request.validated.get('delete') != 'false':
         meta.remove_queue(request.app_key, queue_name)
     return {'status': 'ok'}
 
 
-@queues.post(permission='new_message')
+@queues.post(permission='new_message',
+             validator=(appkey_check, partionheader_check, messagebody_check))
 def new_message(request):
     """Post a message to a queue
 
@@ -217,15 +210,8 @@ def new_message(request):
 
     """
     queue_name = request.matchdict['queue_name']
-    if len(request.body) <= 0:
-        raise HTTPBadRequest("Failure to provide message body.")
-
-    if 'X-Partition' in request.headers:
-        try:
-            partition = int(request.headers['X-Partition'])
-        except (ValueError, TypeError):
-            raise HTTPBadRequest("Invalid 'X-Partition' header value")
-    else:
+    partition = request.validated.get('partition')
+    if not partition:
         meta = request.registry['backend_metadata']
         info = meta.queue_information(request.app_key, queue_name)
         partitions = info['partitions']
@@ -241,7 +227,8 @@ def new_message(request):
     }
 
 
-@queues.get(permission='view_message')
+@queues.get(permission='view_message',
+            validator=(appkey_check, message_get_check))
 def get_messages(request):
     """Get messages from a queue
 
@@ -284,16 +271,11 @@ def get_messages(request):
 
     """
     queue_name = request.matchdict['queue_name']
-    limit = valid_int(request.GET, 'limit') or 100
-    timestamp = valid_float(request.GET, 'since_timestamp')
-    partition = valid_int(request.GET, 'partition') or 1
-
-    order = request.GET.get('order', 'descending')
-    if order and order not in ['ascending', 'descending']:
-        raise HTTPBadRequest("Order parameter is invalid")
-
     storage = request.registry['backend_storage']
-    messages = storage.retrieve('%s-%s' % (queue_name, partition), limit,
-                                timestamp, order)
+    messages = storage.retrieve(
+        '%s-%s' % (queue_name, request.validated['partition']),
+        request.validated['limit'],
+        request.validated['since_timestamp'],
+        request.validated['order'])
     message_data = [{'key': key.hex, 'body': body} for key, body in messages]
     return {'status': 'ok', 'messages': message_data}
