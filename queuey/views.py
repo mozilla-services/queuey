@@ -37,7 +37,6 @@ import random
 import uuid
 
 from cornice.service import Service
-from pyramid.httpexceptions import HTTPBadRequest
 
 from queuey.exceptions import ApplicationNotRegistered
 from queuey.validators import appkey_check
@@ -47,8 +46,6 @@ from queuey.validators import messagebody_check
 from queuey.validators import queuename_check
 from queuey.validators import partition_check
 from queuey.validators import partionheader_check
-from queuey.validators import valid_int
-from queuey.validators import valid_float
 
 
 # Services
@@ -205,6 +202,7 @@ def new_message(request):
         {
             'status': 'ok',
             'key': '3a6592301e0911e190b1002500f0fa7c',
+            'timestamp': 1323976306.988889,
             'partition': 1
         }
 
@@ -218,11 +216,12 @@ def new_message(request):
         partition = random.randint(1, partitions)
 
     storage = request.registry['backend_storage']
-    message_key = storage.push('%s-%s' % (queue_name, partition),
-                               request.body)
+    message_key, timestamp = storage.push('%s-%s' % (queue_name, partition),
+                                          request.body)
     return {
         'status': 'ok',
         'key': message_key.hex,
+        'timestamp': timestamp,
         'partition': partition
     }
 
@@ -260,10 +259,12 @@ def get_messages(request):
             'messages': [
                 {
                     'key': '3a6592301e0911e190b1002500f0fa7c',
+                    'timestamp': 1323973966282.637,
                     'body': 'jlaijwiel2432532jilj'
                 },
                 {
                     'key': '3a8553d71e0911e19262002500f0fa7c',
+                    'timestamp': 1323973966918.241,
                     'body': 'ion12oibasdfjioawneilnf'
                 }
             ]
@@ -277,5 +278,8 @@ def get_messages(request):
         request.validated['limit'],
         request.validated['since_timestamp'],
         request.validated['order'])
-    message_data = [{'key': key.hex, 'body': body} for key, body in messages]
+    message_data = [{
+        'key': key.hex,
+        'timestamp': timestamp,
+        'body': body} for key, timestamp, body in messages]
     return {'status': 'ok', 'messages': message_data}

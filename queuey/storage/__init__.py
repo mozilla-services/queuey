@@ -81,7 +81,7 @@ class MessageQueueBackend(Interface):
                       descending order.
         :order type: `ascending` or `descending`
 
-        :returns: A list of (timestamp, message_body) tuples
+        :returns: A list of (key, timestamp, message_body) tuples
         :rtype: list
         :raises: :exc:`~queuey.exceptions.QueueDoesNotExist` if the
                  queue does not exist
@@ -89,9 +89,14 @@ class MessageQueueBackend(Interface):
         Example response::
 
             [
-                ('aebb663d1d4311e1a65f002500f0fa7c', 'jiawefjilawe'),
-                ('ae45017a1d4311e19562002500f0fa7c', 'auwiofuweni3')
+                ('aebb663d1d4311e1a65f002500f0fa7c', 1323973966282.637,
+                 'jiawefjilawe'),
+                ('ae45017a1d4311e19562002500f0fa7c', 1323973966918.241,
+                 'auwiofuweni3')
             ]
+
+        The messages will be ordered based on the ``order`` param using
+        the timestamp.
 
         .. note::
 
@@ -114,8 +119,8 @@ class MessageQueueBackend(Interface):
                     period the message should be unavilable
         :ttl type: int
 
-        :returns: The message key
-        :rtype: UUID hex
+        :returns: The message key and timestamp as a tuple
+        :rtype: tuple
 
         """
 
