@@ -112,13 +112,20 @@ class CassandraQueueBackend(object):
             results = filter(lambda x: x[0].time < cut_off, results.items())
         else:
             results = results.items()
+
+        # Create the tuples by extracting the timestamp from the
+        # time UUID
+        for index, content in enumerate(results):
+            seconds = (content[0].time - 0x01b21dd213814000L) * 100 / 1e9
+            results[index] = (content[0], seconds, content[1])
         return results
 
     def push(self, queue_name, message, ttl=60 * 60 * 24 * 3):
         """Push a message onto the queue"""
         now = uuid.uuid1()
         self.store_fam.insert(key=queue_name, columns={now: message}, ttl=ttl)
-        return now
+        timestamp = (now.time - 0x01b21dd213814000L) * 100 / 1e9
+        return now, timestamp
 
     def exists(self, queue_name):
         """Return whether the queue exists or not"""

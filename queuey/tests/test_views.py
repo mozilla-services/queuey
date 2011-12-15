@@ -38,10 +38,7 @@ import uuid
 import os
 import time
 
-from nose.tools import raises
-
 from pyramid import testing
-from pyramid.httpexceptions import HTTPBadRequest
 from pyramid.util import DottedNameResolver
 
 dotted_resolver = DottedNameResolver(None)

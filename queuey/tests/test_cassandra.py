@@ -77,7 +77,7 @@ class TestCassandraStore(unittest.TestCase):
         queue_name = uuid.uuid4().hex
         backend.push(queue_name, payload)
         existing = backend.retrieve(queue_name)
-        self.assertEqual(existing[0][1], payload)
+        self.assertEqual(existing[0][2], payload)
 
     def test_delay(self):
         backend = self._makeOne(delay=10)
@@ -93,7 +93,7 @@ class TestCassandraStore(unittest.TestCase):
             self.assertEqual(existing, [])
             mock_time.return_value = time_func() + 10
             existing = backend.retrieve(queue_name)
-            self.assertEqual(existing[0][1], payload)
+            self.assertEqual(existing[0][2], payload)
 
     def test_message_ordering(self):
         backend = self._makeOne()
@@ -101,17 +101,17 @@ class TestCassandraStore(unittest.TestCase):
         another = 'another payload'
         queue_name = uuid.uuid4().hex
         backend.push(queue_name, payload)
-        last = backend.push(queue_name, another)
+        last = backend.push(queue_name, another)[0]
         existing = backend.retrieve(queue_name)
         self.assertEqual(2, len(existing))
-        self.assertEqual(existing[1][1], payload)
+        self.assertEqual(existing[1][2], payload)
 
         existing = backend.retrieve(queue_name, order='ascending')
-        self.assertEqual(existing[1][1], another)
+        self.assertEqual(existing[1][2], another)
 
         # Add a limit
         existing = backend.retrieve(queue_name, limit=1)
-        self.assertEqual(existing[0][1], another)
+        self.assertEqual(existing[0][2], another)
         self.assertEqual(len(existing), 1)
 
         # Add a timestamp
@@ -119,7 +119,7 @@ class TestCassandraStore(unittest.TestCase):
         second_value = second_value
         existing = backend.retrieve(queue_name, timestamp=second_value,
                                     order='ascending')
-        self.assertEqual(existing[0][1], another)
+        self.assertEqual(existing[0][2], another)
         self.assertEqual(len(existing), 1)
 
     def test_message_removal(self):
