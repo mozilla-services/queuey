@@ -4,6 +4,10 @@
 *$py.class
 *.pt.py
 *.txt.py
+.Python
+.channel
+src/
+zookeeper/
 *~
 .coverage
 .tox/
