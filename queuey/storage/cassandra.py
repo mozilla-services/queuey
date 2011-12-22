@@ -125,7 +125,7 @@ class CassandraQueueBackend(object):
         now = uuid.uuid1()
         self.store_fam.insert(key=queue_name, columns={now: message}, ttl=ttl)
         timestamp = (now.time - 0x01b21dd213814000L) / 1e7
-        return now, timestamp
+        return now.hex, timestamp
 
     def exists(self, queue_name):
         """Return whether the queue exists or not"""
@@ -141,7 +141,8 @@ class CassandraQueueBackend(object):
 
     def delete(self, queue_name, *keys):
         """Delete a batch of keys"""
-        self.store_fam.remove(key=queue_name, columns=keys)
+        self.store_fam.remove(key=queue_name,
+                              columns=[uuid.UUID(hex=x) for x in keys])
         return True
 
     def count(self, queue_name):

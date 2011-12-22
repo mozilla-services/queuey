@@ -102,6 +102,7 @@ class TestCassandraStore(unittest.TestCase):
         queue_name = uuid.uuid4().hex
         backend.push(queue_name, payload)
         last = backend.push(queue_name, another)[0]
+        last_uuid = uuid.UUID(hex=last)
         existing = backend.retrieve(queue_name)
         self.assertEqual(2, len(existing))
         self.assertEqual(existing[1][2], payload)
@@ -115,7 +116,7 @@ class TestCassandraStore(unittest.TestCase):
         self.assertEqual(len(existing), 1)
 
         # Add a timestamp
-        second_value = (last.time - 0x01b21dd213814000L) * 100 / 1e9
+        second_value = (last_uuid.time - 0x01b21dd213814000L) * 100 / 1e9
         second_value = second_value
         existing = backend.retrieve(queue_name, timestamp=second_value,
                                     order='ascending')
