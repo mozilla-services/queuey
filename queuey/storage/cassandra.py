@@ -137,6 +137,12 @@ class CassandraQueueBackend(object):
     def truncate(self, queue_name):
         """Remove all contents of the queue"""
         self.store_fam.remove(key=queue_name)
+        return True
+
+    def delete(self, queue_name, *keys):
+        """Delete a batch of keys"""
+        self.store_fam.remove(key=queue_name, columns=keys)
+        return True
 
     def count(self, queue_name):
         """Return a count of the items in this queue"""

@@ -148,6 +148,19 @@ class MessageQueueBackend(Interface):
 
         """
 
+    def delete(self, queue_name, *keys):
+        """Delete all the given keys from the queue
+
+        :param queue_name: Queue name
+        :queue_name type: string
+        :param keys: Message keys that should be removed
+        :type keys: list
+
+        :returns: Whether the delete was successful
+        :rtype: bool
+
+        """
+
     def count(self, queue_name):
         """Returns the amount of messages in the queue
 

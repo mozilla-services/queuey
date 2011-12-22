@@ -136,6 +136,24 @@ class TestCassandraStore(unittest.TestCase):
         existing = backend.retrieve(queue_name)
         self.assertEqual(0, len(existing))
 
+    def test_message_delete(self):
+        backend = self._makeOne()
+        payload = 'a rather boring payload'
+        another = 'another payload'
+        queue_name = uuid.uuid4().hex
+        key1 = backend.push(queue_name, payload)[0]
+        key2 = backend.push(queue_name, another)[0]
+        existing = backend.retrieve(queue_name)
+        self.assertEqual(2, len(existing))
+
+        backend.delete(queue_name, key2)
+        existing = backend.retrieve(queue_name)
+        self.assertEqual(1, len(existing))
+
+        backend.delete(queue_name, key1)
+        existing = backend.retrieve(queue_name)
+        self.assertEqual(0, len(existing))
+
     def test_message_counting(self):
         backend = self._makeOne()
         payload = 'a rather boring payload'
