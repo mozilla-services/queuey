@@ -33,6 +33,7 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
+import simplejson
 
 
 def appkey_check(request):
@@ -80,6 +81,23 @@ def delete_check(request):
         else:
             request.errors.add('url', 'delete', "Delete must be 'false' if "
                                "specified.")
+
+    if len(request.body) > 0:
+        try:
+            body = simplejson.loads(request.body)
+        except simplejson.JSONDecodeError:
+            request.errors.add('body', '', "Body was present but not JSON.")
+            return
+        if not isinstance(body, dict):
+            request.errors.add('body', '', "Body must be a JSON dict.")
+        if 'messages' not in body:
+            request.errors.add('body', 'messages', "Not present in JSON body.")
+        if 'messages' in body and not body['messages']:
+            request.errors.add('body', 'messages', "Invalid messages "
+                               "argument, must be a list of message keys.")
+
+        if not request.errors:
+            request.validated['messages'] = body['messages']
 
 
 def partionheader_check(request):

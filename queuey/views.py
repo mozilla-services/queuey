@@ -140,17 +140,23 @@ def get_queue(request):
 
 
 @queues.delete(permission='delete_queue',
-               validator=(appkey_check, delete_check))
+               validator=(appkey_check, partionheader_check, delete_check))
 def delete_queue(request):
     """Delete a queue
 
     Headers
 
         X-Application-Key - The applications key
+        X-Partition - (`Optional`) A specific partition number to
+                      delete from.
 
     URL Params
 
         queue_name - A UUID4 hex string to use as the queue name.
+
+    JSON Body Params (`Optional`)
+
+        messages - A list of message keys to delete
 
     Query Params
 
@@ -161,15 +167,23 @@ def delete_queue(request):
 
         {'status': 'ok'}
 
+    If individual messages are being deleted, the partition will default
+    to partition 1 if no ``X-Partition`` header is supplied.
+
     """
     queue_name = request.matchdict['queue_name']
     storage = request.registry['backend_storage']
     meta = request.registry['backend_metadata']
-    info = meta.queue_information(request.app_key, queue_name)
-    partitions = info['partitions']
+    if 'messages' in request.validated:
+        partition = request.validated.get('partition', 1)
+        storage.delete('%s-%s' % (queue_name, partition),
+                       *request.validated['messages'])
+    else:
+        info = meta.queue_information(request.app_key, queue_name)
+        partitions = info['partitions']
 
-    for num in range(1, partitions + 1):
-        storage.truncate('%s-%s' % (queue_name, num))
+        for num in range(1, partitions + 1):
+            storage.truncate('%s-%s' % (queue_name, num))
 
     if request.validated.get('delete') != 'false':
         meta.remove_queue(request.app_key, queue_name)
@@ -220,7 +234,7 @@ def new_message(request):
                                           request.body)
     return {
         'status': 'ok',
-        'key': message_key.hex,
+        'key': message_key,
         'timestamp': timestamp,
         'partition': partition
     }
