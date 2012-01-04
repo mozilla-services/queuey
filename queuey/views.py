@@ -54,7 +54,7 @@ queues = Service(name='queues', path='/queue/{queue_name:[a-z0-9]{32}}/')
 
 
 @message_queue.post(permission='create_queue',
-                    validator=(appkey_check, partition_check))
+                    validators=(appkey_check, partition_check))
 def new_queue(request):
     """Create a new queue
 
@@ -98,7 +98,7 @@ def new_queue(request):
 
 
 @message_queue.get(permission='view_queue',
-                   validator=(appkey_check, queuename_check))
+                   validators=(appkey_check, queuename_check))
 def get_queue(request):
     """Get queue information
 
@@ -140,7 +140,7 @@ def get_queue(request):
 
 
 @queues.delete(permission='delete_queue',
-               validator=(appkey_check, partionheader_check, delete_check))
+               validators=(appkey_check, partionheader_check, delete_check))
 def delete_queue(request):
     """Delete a queue
 
@@ -191,7 +191,7 @@ def delete_queue(request):
 
 
 @queues.post(permission='new_message',
-             validator=(appkey_check, partionheader_check, messagebody_check))
+             validators=(appkey_check, partionheader_check, messagebody_check))
 def new_message(request):
     """Post a message to a queue
 
@@ -241,7 +241,7 @@ def new_message(request):
 
 
 @queues.get(permission='view_message',
-            validator=(appkey_check, message_get_check))
+            validators=(appkey_check, message_get_check))
 def get_messages(request):
     """Get messages from a queue
 

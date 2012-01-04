@@ -76,47 +76,44 @@ class ViewTests(unittest.TestCase):
         testing.tearDown()
 
     def _new_request(self, app_key, queue_name=None):
-        request = testing.DummyRequest(headers={'X-Application-Key': app_key})
-        request.registry['app_keys'] = {app_key: 'notifications'}
+        request = testing.DummyRequest()
+        request.app_key = app_key
+        request.app_name = 'notifications'
+        request.validated = {}
         if queue_name:
             request.matchdict = {'queue_name': queue_name}
         return request
 
     def _new_queue(self, app_key):
         from queuey.views import new_queue
-        return new_queue(self._new_request(app_key))
+        request = self._new_request(app_key)
+        request.validated['partitions'] = 1
+        return new_queue(request)
 
     def _get_queue(self, app_key, queue_name):
         from queuey.views import get_queue
         request = self._new_request(app_key)
-        request.GET['queue_name'] = queue_name
+        request.validated['queue_name'] = queue_name
         return get_queue(request)
 
     def _new_message(self, app_key, queue_name, body, partition=None):
         from queuey.views import new_message
         request = self._new_request(app_key, queue_name)
         if partition:
-            request.headers['X-Partition'] = partition
+            request.validated['partition'] = int(partition)
         request.body = body
         return new_message(request)
 
     def _get_messages(self, app_key, queue_name, partition=None):
         from queuey.views import get_messages
         request = self._new_request(app_key, queue_name)
-        if partition:
-            request.GET['partition'] = partition
+        request.validated['partition'] = int(partition) if partition else 1
+        request.validated['limit'] = 100
+        request.validated['since_timestamp'] = None
+        request.validated['order'] = 'descending'
         return get_messages(request)
 
-    def test_bad_app_key(self):
-        from queuey.views import new_queue
-        app_key = uuid.uuid4().hex
-        request = testing.DummyRequest(headers={'X-Application-Key': 'ff'})
-        request.registry['app_keys'] = {app_key: 'notifications'}
-        info = new_queue(request)
-        assert "You must provide a valid application key" in info.body
-
     def test_new_queue_and_info(self):
-        from queuey.views import new_queue, get_queue
         app_key = uuid.uuid4().hex
         info = self._new_queue(app_key)
         self.assertEqual(info['status'], 'ok')
@@ -128,37 +125,15 @@ class ViewTests(unittest.TestCase):
         self.assertEqual(data['count'], 0)
         self.assertEqual(data['application_name'], 'notifications')
 
-        request = testing.DummyRequest()
-        request.app_key = app_key
-        request.app_name = 'notifications'
-
-        # Bad queue
-        data = get_queue(request)
-        assert "No queue_name specified" in data.body
-
-        # bad partition
-        request = testing.DummyRequest()
-        request.app_key = app_key
-        request.app_name = 'notifications'
-        request.POST['partitions'] = 'fred'
-        resp = new_queue(request)
-        assert 'Partitions parameter is invalid' in resp.body
-
     def test_delete_queue(self):
         from queuey.views import delete_queue
         app_key = uuid.uuid4().hex
         info = self._new_queue(app_key)
         queue_name = info['queue_name']
 
-        # Delete with bad delete value
-        request = self._new_request(app_key, queue_name)
-        request.GET['delete'] = 'fred'
-        info = delete_queue(request)
-        assert "Delete must be 'false' if specified" in info.body
-
         # Test truncate first
         request = self._new_request(app_key, queue_name)
-        request.GET['delete'] = 'false'
+        request.validated['delete'] = 'false'
         info = delete_queue(request)
         self.assertEqual(info['status'], 'ok')
 
@@ -176,32 +151,16 @@ class ViewTests(unittest.TestCase):
         key1 = self._new_message(app_key, queue_name, 'hello all!')['key']
 
         request = self._new_request(app_key, queue_name)
-        request.GET['delete'] = 'false'
-        request.body = simplejson.dumps({'messages': [key1]})
+        request.validated['delete'] = 'false'
+        request.validated['messages'] = [key1]
         info = delete_queue(request)
         self.assertEqual(info['status'], 'ok')
-
-        # Bad body
-        request.body = 'meff'
-        info = delete_queue(request)
-        assert 'Body was present but not JSON' in info.body
-
-        request.body = simplejson.dumps(range(20))
-        info = delete_queue(request)
-        assert 'Body must be a JSON dict' in info.body
-
-        request.body = simplejson.dumps({'messages': []})
-        info = delete_queue(request)
-        assert 'Invalid messages' in info.body
 
     def test_new_messages_and_get(self):
         from queuey.views import get_messages
         app_key = uuid.uuid4().hex
         info = self._new_queue(app_key)
         queue_name = info['queue_name']
-
-        info = self._new_message(app_key, queue_name, '')
-        assert 'No body content present' in info.body
 
         info = self._new_message(app_key, queue_name, 'this is a message!')
         self.assertEqual(info['status'], 'ok')
@@ -221,28 +180,21 @@ class ViewTests(unittest.TestCase):
         assert 'key' in info
 
         request = self._new_request(app_key, queue_name)
-        request.GET['since_timestamp'] = repr(now)
-        request.GET['order'] = 'ascending'
+        request.validated['since_timestamp'] = now
+        request.validated['order'] = 'ascending'
+        request.validated['partition'] = 1
+        request.validated['limit'] = 100
         info = get_messages(request)
         self.assertEqual(info['status'], 'ok')
         self.assertEqual(info['messages'][0]['body'], 'this is another message!')
         self.assertEqual(len(info['messages']), 1)
 
-        # Bad float
-        request.GET['since_timestamp'] = 'smith'
-        info = get_messages(request)
-        assert 'since_timestamp must be a float' in info.body
-        del request.GET['since_timestamp']
-
-        # Bad order
         request = self._new_request(app_key, queue_name)
-        request.GET['order'] = 'backwards'
-        info = get_messages(request)
-        assert 'Order parameter must be either' in info.body
-
-        request = self._new_request(app_key, queue_name)
-        request.GET['order'] = 'ascending'
-        request.GET['limit'] = '1'
+        request.validated['since_timestamp'] = now
+        request.validated['order'] = 'descending'
+        request.validated['limit'] = '1'
+        request.validated['partition'] = 1
+        request.validated['limit'] = 100
         info = get_messages(request)
         self.assertEqual(info['status'], 'ok')
         self.assertEqual(info['messages'][0]['body'], 'this is a message!')
@@ -258,11 +210,6 @@ class ViewTests(unittest.TestCase):
         self.assertEqual(info['status'], 'ok')
         self.assertEqual(info['partition'], 2)
 
-        # Bad partition
-        info = self._new_message(app_key, queue_name, 'this is a message!',
-                                 partition='smith')
-        assert "The 'X-Partition' header must be an integer" in info.body
-
         info = self._new_message(app_key, queue_name, 'this is a message!')
         self.assertEqual(info['status'], 'ok')
         part = info['partition']
@@ -272,7 +219,3 @@ class ViewTests(unittest.TestCase):
         info = self._get_messages(app_key, queue_name, partition=str(part))
         self.assertEqual(info['status'], 'ok')
         self.assertEqual(info['messages'][0]['body'], 'this is a message!')
-
-        # Invalid partition
-        info = self._get_messages(app_key, queue_name, partition='blah')
-        assert "partition must be an integer" in info.body
