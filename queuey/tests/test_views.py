@@ -38,8 +38,6 @@ import uuid
 import os
 import time
 
-import simplejson
-
 from pyramid import testing
 from pyramid.util import DottedNameResolver
 
