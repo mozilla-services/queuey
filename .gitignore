@@ -21,3 +21,4 @@ include/
 cassandra.pid
 cassandra
 deps
+zookeeper.out
