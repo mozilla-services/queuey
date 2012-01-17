@@ -58,7 +58,7 @@ $(BIN)/python:
 $(BIN)/pip: $(BIN)/python
 
 $(BIN)/paster: lib $(BIN)/pip
-	$(INSTALL) -r requirements.txt
+	$(INSTALL) -r dev-reqs.txt
 	$(PYTHON) setup.py develop
 
 $(ZOOKEEPER):
