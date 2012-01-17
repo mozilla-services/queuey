@@ -2,7 +2,7 @@ APPNAME = queuey
 DEPS =
 HERE = $(shell pwd)
 BIN = $(HERE)/bin
-VIRTUALENV = virtualenv
+VIRTUALENV = virtualenv-2.6
 NOSE = bin/nosetests -s --with-xunit
 TESTS = $(APPNAME)/tests
 PYTHON = $(HERE)/bin/python
@@ -30,10 +30,10 @@ endif
 ifdef PYPISTRICT
 	PYPIOPTIONS += -s
 	ifdef PYPIEXTRAS
-		HOST = `python -c "import urlparse; print urlparse.urlparse('$(PYPI)')[1] + ',' + urlparse.urlparse('$(PYPIEXTRAS)')[1]"`
+		HOST = `python2.6 -c "import urlparse; print urlparse.urlparse('$(PYPI)')[1] + ',' + urlparse.urlparse('$(PYPIEXTRAS)')[1]"`
 
 	else
-		HOST = `python -c "import urlparse; print urlparse.urlparse('$(PYPI)')[1]"`
+		HOST = `python2.6 -c "import urlparse; print urlparse.urlparse('$(PYPI)')[1]"`
 	endif
 
 endif
@@ -51,7 +51,7 @@ BUILD_DIRS = bin build deps include lib lib64
 all:	build
 
 $(BIN)/python:
-	python $(SW)/virtualenv.py --no-site-packages --distribute .
+	python2.6 $(SW)/virtualenv.py --no-site-packages --distribute .
 	rm distribute-0.6.19.tar.gz
 	$(BIN)/pip install $(SW)/pip-1.0.2.tar.gz
 
