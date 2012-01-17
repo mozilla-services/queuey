@@ -25,6 +25,7 @@ After downloading the repository for the first time,
 cd into the directory and run make.
 
 This will do the following:
+
 - Create a virtual python environment 
 - Install required python packages into this environment
 
@@ -43,8 +44,9 @@ directory so as not to interfere with any existing Cassandra installations on
 the system.
 
 In addition, you'll need to start Cassandra (See: Running the Cassandra Server)
-and create the schema:
-* bin/cassandra/bin/cassandra-cli -host localhost --file etc/cassandra/schema.txt
+and create the schema::
+
+    bin/cassandra/bin/cassandra-cli -host localhost --file etc/cassandra/schema.txt
 
 Zookeeper
 ---------
