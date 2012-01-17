@@ -19,8 +19,8 @@ else
 	RPM_CHANNEL = `cat .channel`
 endif
 INSTALL = $(HERE)/bin/pip install
-PIP_CACHE = /tmp/pip_cache
-INSTALLOPTIONS = --download-cache $(PIP_CACHE)  -U -i $(PYPI)
+PIP_DOWNLOAD_CACHE ?= /tmp/pip_cache
+INSTALLOPTIONS = --download-cache $(PIP_DOWNLOAD_CACHE) -U -i $(PYPI)
 
 ifdef PYPIEXTRAS
 	PYPIOPTIONS += -e $(PYPIEXTRAS)
