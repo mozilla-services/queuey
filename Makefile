@@ -96,7 +96,7 @@ clean-env:
 clean-cassandra:
 	rm -rf cassandra bin/cassandra
 
-clean:	clean-env 
+clean:	clean-env
 
 build: $(BIN)/pip
 	$(INSTALL) MoPyTools
