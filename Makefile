@@ -57,7 +57,7 @@ $(BIN)/python:
 
 $(BIN)/pip: $(BIN)/python
 
-$(BIN)/paster: lib $(BIN)/pip
+lib: $(BIN)/pip
 	$(INSTALL) -r dev-reqs.txt
 	$(PYTHON) setup.py develop
 
@@ -98,9 +98,8 @@ clean-cassandra:
 
 clean:	clean-env
 
-build: $(BIN)/pip
+build: lib
 	$(INSTALL) MoPyTools
-	$(INSTALL) nose
 	$(INSTALL) WebTest
 	$(PYTHON) setup.py develop
 	$(BUILDAPP) -c $(CHANNEL) $(PYPIOPTIONS) $(DEPS)
