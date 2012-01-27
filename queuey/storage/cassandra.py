@@ -50,6 +50,7 @@ CL = {
     'any': pycassa.ConsistencyLevel.ANY,
     'one': pycassa.ConsistencyLevel.ONE,
     'local_quorum': pycassa.ConsistencyLevel.LOCAL_QUORUM,
+    'each_quorum': pycassa.ConsistencyLevel.EACH_QUORUM,
 }
 
 
@@ -80,7 +81,10 @@ class CassandraQueueBackend(object):
 
         """
         hosts = parse_hosts(host)
-        self.pool = pool = pycassa.connect(database, hosts)
+        self.pool = pool = pycassa.ConnectionPool(
+            keyspace=database,
+            server_list=hosts,
+        )
         self.store_fam = sf = pycassa.ColumnFamily(pool, 'Stores')
         self.delay = int(delay) if delay else None
         sf.read_consistency_level = CL.get(read_consistency) or CL['one']
