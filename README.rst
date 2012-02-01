@@ -14,6 +14,7 @@ Make sure you have the following software already
 installed before proceeding:
 
 - Java 1.6
+- Ant
 - Make
 - Python 2.6 (with virtualenv installed)
 
@@ -61,6 +62,11 @@ already been installed::
 	
 	cd bin/zookeeper/src/c
 	sudo make install
+
+Before running zookeeper for the first time, you will need to create the data
+directory::
+
+	mkdir -p zookeeper/server1/data
 
 You can test that the ZooKeeper extension is working properly by opening the
 local Python with::
