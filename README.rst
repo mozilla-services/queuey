@@ -33,8 +33,10 @@ This will do the following:
 Cassandra
 ---------
 
-You will then need to setup and install Cassandra and Zookeeper. To assist
-with this you can run::
+To run queuey, you need a storage back-end for the queues. The default
+storage back-end is Cassandra. This installation has been automated in
+queuey's Makefile, to install Cassandra in the same directory as
+queuey::
 
 	make cassandra
 
@@ -44,39 +46,11 @@ The default (Cassandra) stores its data and files inside the local cassandra
 directory so as not to interfere with any existing Cassandra installations on
 the system.
 
-In addition, you'll need to start Cassandra (See: Running the Cassandra Server)
+In addition, you'll need to start Cassandra (See: Running the Cassandra
+ Server)
 and create the schema::
 
     bin/cassandra/bin/cassandra-cli -host localhost --file etc/cassandra/schema.txt
-
-Zookeeper
----------
-
-To install Zookeeper, run::
-
-	make zookeeper
-
-This will fetch ZooKeeper, compile the C extension and Python extension. To
-use it, you will need to install the C extension on your system if it hasn't
-already been installed::
-	
-	cd bin/zookeeper/src/c
-	sudo make install
-
-Before running zookeeper for the first time, you will need to create the data
-directory::
-
-	mkdir -p zookeeper/server1/data
-
-You can test that the ZooKeeper extension is working properly by opening the
-local Python with::
-	
-	./bin/python
-
-And then importing zookeeper::
-	
-	import zookeeper
-
 
 Running Queuey
 ==============
@@ -95,21 +69,9 @@ To shut it down at any point in the future::
 
 	kill -2 `cat cassandra.pid`
 
-Running the Zookeeper Server:
------------------------------
-
-::
-	
-	./bin/zookeeper/bin/zkServer.sh start
-
-To shut it down::
-	
-	./bin/zookeeper/bin/zkServer.sh stop
-
-
 Running the Queuey Application:
 -------------------------------
 
 ::
 
-	bin/paster serve etc/queuey-dev.ini
+	bin/pserve etc/queuey-dev.ini

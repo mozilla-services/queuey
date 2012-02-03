@@ -27,7 +27,7 @@ if not on_rtd:
 
 setup(
     name='queuey',
-    description="Message Queue server",
+    description="RESTful Message Queue",
     version=__version__,
     long_description=README + '\n\n' + CHANGES,
     classifiers=[
@@ -36,7 +36,7 @@ setup(
         "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
     ],
     keywords="message-queue notifications server messaging queue",
-    author="Ben Bangert",
+    author="Mozilla Foundation",
     author_email="bbangert@mozilla.com",
     url="http://queuey.readthedocs.org/",
     license="MPLv2.0",
@@ -44,7 +44,7 @@ setup(
     test_suite="queuey.tests",
     include_package_data=True,
     zip_safe=False,
-    tests_require=['pkginfo', 'Mock>=0.7', 'nose'],
+    tests_require=['pkginfo', 'Mock>=0.8rc2', 'nose'],
     install_requires=reqs,
     entry_points="""
         [paste.app_factory]

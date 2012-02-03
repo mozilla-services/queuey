@@ -6,7 +6,7 @@ PasteDeploy == 1.5
 PasteScript == 1.7.4.2
 Pygments == 1.4
 WebOb == 1.1.1
-pyramid == 1.2.1
+pyramid == 1.3a6
 pyramid_debugtoolbar == 0.9.4
 repoze.lru == 0.4
 venusian == 1.0a2
