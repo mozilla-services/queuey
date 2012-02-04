@@ -36,6 +36,8 @@ Queuey can be configured with varying message guarantees, such as:
 Changing the storage back-end and deployment strategies directly affects
 the message guarantee's.
 
+For more background on queuey, see `the Mozilla wiki section on queuey <https://wiki.mozilla.org/Services/Sagrada/Queuey>`_.
+
 Reference Material
 ==================
 
