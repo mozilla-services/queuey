@@ -1,8 +1,3 @@
-.. note::
-
-	This code is not yet stable. If you are interested in working with it,
-	please contact the author directly (bbangert@mozilla.com)
-
 ======
 Queuey
 ======
@@ -23,7 +18,9 @@ Installation
 ============
 
 After downloading the repository for the first time, 
-cd into the directory and run make.
+cd into the directory and run::
+
+    $ make
 
 This will do the following:
 
@@ -52,8 +49,8 @@ and create the schema::
 
     bin/cassandra/bin/cassandra-cli -host localhost --file etc/cassandra/schema.txt
 
-Running Queuey
-==============
+Running
+=======
 
 Running the Cassandra Server:
 -----------------------------
