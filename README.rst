@@ -8,7 +8,7 @@ Given the proliferation of message queue's, one could be inclined to believe
 that inventing more is not the answer. Using an existing solution was
 attempted multiple times with most every existing message queue product.
 
-The others failed.
+The others failed (for our use-cases).
 
 Queuey is meant to handle some unqiue conditions that most other message
 queue solutions either don't handle, or handle very poorly. Many of them for
@@ -23,6 +23,18 @@ Queuey Assumptions and Features:
 - Millions of queues may be created
 - Message delivery characteristics need to be tweakable based on the
   specific cost-benefit for a Queuey deployment
+- RESTful HTTP API for easy access by a variety of clients, including AJAX
+- Authentication system to support multiple 'Application' access to Queuey
+  with optional Browser-ID client authentication
+
+Queuey can be configured with varying message guarantees, such as:
+
+- Deliver once, and exactly once
+- Deliver at least once (and under rare conditions, maybe more)
+- Deliver usually at least once
+
+Changing the storage back-end and deployment strategies directly affects
+the message guarantee's.
 
 Requirements
 ============
