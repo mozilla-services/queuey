@@ -8,8 +8,7 @@ create column family Stores
     with comparator = UUIDType
     and key_validation_class = UTF8Type
     and default_validation_class = UTF8Type
-    and rows_cached = 100
-    ;
+    and rows_cached = 100;
 
 create keyspace MetadataStore
     with strategy_options=[{replication_factor:1}]
@@ -20,18 +19,24 @@ use MetadataStore;
 create column family Applications
     with comparator = UTF8Type
     and key_validation_class = UTF8Type
+    and rows_cached = 100
     and compression_options = [{
         sstable_compression: SnappyCompressor,
         chunk_length_kb: 64
-    }]
+    }];
+
+create column family ApplicationQueueData
+    with comparator = UTF8Type
+    and key_validation_class = UTF8Type
     and column_metadata = [{
-        column_name : queues,
-        validation_class : UUIDType
+        column_name: queue_count,
+        validation_class: CounterColumnType
     }];
 
 create column family Queues
     with comparator = UTF8Type
     and key_validation_class = UTF8Type
+    and rows_cached = 1000
     and compression_options = [{
         sstable_compression: SnappyCompressor,
         chunk_length_kb: 64
@@ -46,4 +51,11 @@ create column family Queues
     }, {
         column_name: created,
         validation_class: DateType
+    }, {
+        column_name: type,
+        validation_class: UTF8Type,
+        index_type: KEYS
+    }, {
+        column_name: permission,
+        validation_class: UTF8Type
     }];
