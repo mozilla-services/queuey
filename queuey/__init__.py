@@ -5,7 +5,10 @@ import os
 
 from pyramid.config import Configurator
 
-from mozsvc.config import Config
+try:
+    from mozsvc.config import Config
+except:
+    Config = None
 
 from queuey.resources import Root
 from queuey.storage import configure_from_settings
@@ -19,13 +22,14 @@ def main(global_config, **settings):
                         os.path.expanduser(
                         config_file))))
 
-    settings['config'] = config = Config(config_file)
+    if Config:
+        settings['config'] = config = Config(config_file)
 
-    # Put values from the config file into the pyramid settings dict.
-    for section in config.sections():
-        setting_prefix = section.replace(":", ".")
-        for name, value in config.get_map(section).iteritems():
-            settings[setting_prefix + "." + name] = value
+        # Put values from the config file into the pyramid settings dict.
+        for section in config.sections():
+            setting_prefix = section.replace(":", ".")
+            for name, value in config.get_map(section).iteritems():
+                settings[setting_prefix + "." + name] = value
 
     config = Configurator(root_factory=Root, settings=settings)
 
@@ -35,21 +39,21 @@ def main(global_config, **settings):
         'metadata', settings['config'].get_map('metadata'))
 
     # Load the application keys
-    app_vals = settings['config'].get_map('application_keys')
-    app_keys = {}
-    for k, v in app_vals.items():
-        for item in v:
-            app_keys[item] = k
-    config.registry['app_keys'] = app_keys
+    if Config:
+        app_vals = settings['config'].get_map('application_keys')
+        app_keys = {}
+        for k, v in app_vals.items():
+            for item in v:
+                app_keys[item] = k
+        config.registry['app_keys'] = app_keys
+
+        # adds Mozilla default views
+        config.include("mozsvc")
+    else:
+        config.registry['app_keys'] = {}
 
     # adds cornice
     config.include("cornice")
-
-    # adds Mozilla default views
-    config.include("mozsvc")
-
-    # adds ip auth
-    config.include('pyramid_ipauth')
 
     config.scan('queuey.views')
     return config.make_wsgi_app()
