@@ -136,7 +136,10 @@ class CassandraMetadata(object):
         """
         hosts = parse_hosts(host)
         self.row_key = '__APPLICATIONS__'
-        self.pool = pool = pycassa.connect(database, hosts)
+        self.pool = pool = pycassa.ConnectionPool(
+            keyspace=database,
+            server_list=hosts,
+        )
         self.app_fam = af = pycassa.ColumnFamily(pool, 'Applications')
         af.read_consistency_level = CL.get(read_consistency) or CL['one']
         af.write_consistency_level = CL.get(write_consistency) or CL['one']
