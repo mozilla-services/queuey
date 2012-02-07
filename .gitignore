@@ -19,7 +19,7 @@ lib/
 man/
 include/
 cassandra.pid
-cassandra
+./cassandra
 deps
 docs/_build
 zookeeper.out
