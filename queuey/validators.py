@@ -1,6 +1,8 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
+import uuid
+
 import simplejson
 
 
@@ -39,6 +41,11 @@ def queuename_check(request):
         request.errors.add('url', 'queue_name', "No queue_name specified.")
     else:
         request.validated['queue_name'] = queue_name
+
+
+def queuename_postcheck(request):
+    queue_name = request.POST.get('queue_name', uuid.uuid4().hex)
+    request.validated['queue_name'] = queue_name
 
 
 def delete_check(request):

@@ -2,7 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 import random
-import uuid
 
 from cornice.service import Service
 
@@ -12,6 +11,7 @@ from queuey.validators import delete_check
 from queuey.validators import message_get_check
 from queuey.validators import messagebody_check
 from queuey.validators import queuename_check
+from queuey.validators import queuename_postcheck
 from queuey.validators import partition_check
 from queuey.validators import partionheader_check
 
@@ -22,21 +22,25 @@ queues = Service(name='queues', path='/queue/{queue_name:[a-z0-9]{32}}/')
 
 
 @message_queue.post(permission='create_queue',
-                    validators=(appkey_check, partition_check))
+                    validators=(appkey_check, partition_check,
+                                queuename_postcheck))
 def new_queue(request):
     """Create a new queue
 
     Headers
 
-        X-Application-Key - The applications key
+        Authorization - Application authorization key
+        Authorization - (`Optional`) Browser ID token
 
     POST params
 
+        queue_name - (`Optional`) Name of the queue to create
         partitions - (`Optional`) How many partitions the queue should
                      have (defaults to 1)
 
     Returns a JSON response indicating the status, the UUID4 hex
-    string of the queue, and the partitions created.
+    string of the queue name (if not supplied), and the partitions
+    created.
 
     Example success response::
 
@@ -50,7 +54,7 @@ def new_queue(request):
     """
     partitions = request.validated['partitions']
     meta = request.registry['backend_metadata']
-    queue_name = uuid.uuid4().hex
+    queue_name = request.validated['queue_name']
     try:
         meta.register_queue(request.app_key, queue_name, partitions)
     except ApplicationNotRegistered:

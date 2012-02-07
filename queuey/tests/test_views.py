@@ -54,6 +54,7 @@ class ViewTests(unittest.TestCase):
         from queuey.views import new_queue
         request = self._new_request(app_key)
         request.validated['partitions'] = 1
+        request.validated['queue_name'] = uuid.uuid4().hex
         return new_queue(request)
 
     def _get_queue(self, app_key, queue_name):
