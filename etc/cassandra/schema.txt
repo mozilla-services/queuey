@@ -23,6 +23,10 @@ create column family Applications
     and compression_options = [{
         sstable_compression: SnappyCompressor,
         chunk_length_kb: 64
+    }]
+    and column_metadata = [{
+        column_name: delay,
+        validation_class: FloatType
     }];
 
 create column family ApplicationQueueData
