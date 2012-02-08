@@ -1,15 +1,3 @@
-create keyspace MessageStore
-    with strategy_options=[{replication_factor:1}]
-    and placement_strategy = 'org.apache.cassandra.locator.SimpleStrategy';
-
-use MessageStore;
-
-create column family Stores
-    with comparator = UUIDType
-    and key_validation_class = UTF8Type
-    and default_validation_class = UTF8Type
-    and rows_cached = 100;
-
 create keyspace MetadataStore
     with strategy_options=[{replication_factor:1}]
     and placement_strategy = 'org.apache.cassandra.locator.SimpleStrategy';
