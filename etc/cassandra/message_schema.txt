@@ -4,8 +4,25 @@ create keyspace MessageStore
 
 use MessageStore;
 
-create column family Stores
+create column family Messages
     with comparator = UUIDType
     and key_validation_class = UTF8Type
     and default_validation_class = UTF8Type
     and rows_cached = 100;
+
+create column family MessageMetadata
+    with comparator = UTF8Type
+    and key_validation_class = UTF8Type
+    and rows_cached = 1000
+    and default_validation_class = UTF8Type
+    and compression_options = [{
+        sstable_compression: SnappyCompressor,
+        chunk_length_kb: 64
+    }]
+    and column_metadata = [{
+        column_name: ContentType,
+        validation_class: UTF8Type
+    }, {
+        column_name: ContentLength,
+        validation_class: LongType
+    }];
