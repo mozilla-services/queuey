@@ -4,19 +4,6 @@ create keyspace MetadataStore
 
 use MetadataStore;
 
-create column family Applications
-    with comparator = UTF8Type
-    and key_validation_class = UTF8Type
-    and rows_cached = 100
-    and compression_options = [{
-        sstable_compression: SnappyCompressor,
-        chunk_length_kb: 64
-    }]
-    and column_metadata = [{
-        column_name: delay,
-        validation_class: FloatType
-    }];
-
 create column family ApplicationQueueData
     with comparator = UTF8Type
     and key_validation_class = UTF8Type
@@ -48,6 +35,6 @@ create column family Queues
         validation_class: UTF8Type,
         index_type: KEYS
     }, {
-        column_name: permission,
+        column_name: permissions,
         validation_class: UTF8Type
     }];
