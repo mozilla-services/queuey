@@ -144,11 +144,22 @@ class MessageQueueBackend(Interface):
                             queue_name, message body, TTL, and a dict of
                             message metadata.
 
+        :returns: The message id's and timestamps as a list of tuples in the
+                  order they were sent
+        :rtype: list of tuples
+
         Example message_data content::
 
             [
                 ('my_queue', 'some message body', 3600, {}),
                 ('other_queue', 'other body', 7200, {})
+            ]
+
+        Example response::
+
+            [
+                ('ae45017a1d4311e19562002500f0fa7c', 1323973966282.637).
+                ('aebb663d1d4311e1a65f002500f0fa7c', 1323973966918.241)
             ]
 
         """
@@ -207,8 +218,10 @@ class MetadataBackend(Interface):
         """Register a queue for the given application
 
         Registers a queue for the application and when it was
-        created in seconds since the epoch, and how many partitions
-        should be allocated.
+        created in seconds since the epoch, and additional metadata.
+
+        This function should record all data needed to lookup queues
+        by application name, along with the metadata.
 
         :param application_name: Name of the application
         :param queue_name: Queue name
@@ -227,6 +240,18 @@ class MetadataBackend(Interface):
 
         :returns: Whether the queue was removed.
         :rtype: bool
+
+        """
+
+    def queue_list(self, application_name, limit=100, offset=None):
+        """Return a list of queues registered for the application
+
+        :param application_name: Name of the application
+        :param limit: How many queue names to return at once
+        :param offset: Start at a specific queue_name offset
+
+        :returns: List of queues registered for the application
+        :rtype: list
 
         """
 
