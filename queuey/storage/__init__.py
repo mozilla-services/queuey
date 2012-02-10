@@ -35,32 +35,41 @@ class MessageQueueBackend(Interface):
                  host='localhost'):
         """Initialize the backend"""
 
-    def retrieve(self, queue_name, limit=None, timestamp=None,
-                 order="descending"):
-        """Retrieve messages from a queue
+    def retrieve_batch(self, consistency, application_name, queue_names,
+                       limit=None, include_metadata=False, start_at=None,
+                       order="ascending"):
+        """Retrieve a batch of messages from a queue
 
-        :param queue_name: Queue name
-        :queue_name type: string
+        :param consistency: Desired consistency of the read operation
+        :param application_name: Name of the application
+        :param queue_names: List of queue names to retrieve from
         :param limit: Amount of messages to retrieve
-        :limit type: int
-        :param timestamp: Retrieve messages starting with this timestamp
-        :timestamp type: datetime
+        :param include_metadata: Whether to include message metadata
+        :param start_at: Either a datetime or message id to start from
         :param order: Which order to traverse the messages. Defaults to
-                      descending order.
-        :order type: `ascending` or `descending`
+                      ascending order.
+        :type order: `ascending` or `descending`
 
-        :returns: A list of (key, timestamp, message_body) tuples
+        :returns: A list of dicts, empty if no messages meet the criteria
         :rtype: list
-        :raises: :exc:`~queuey.exceptions.QueueDoesNotExist` if the
-                 queue does not exist
 
         Example response::
 
             [
-                ('aebb663d1d4311e1a65f002500f0fa7c', 1323973966282.637,
-                 'jiawefjilawe'),
-                ('ae45017a1d4311e19562002500f0fa7c', 1323973966918.241,
-                 'auwiofuweni3')
+                {
+                    'message_id': 'aebb663d1d4311e1a65f002500f0fa7c',
+                    'timestamp': 1323973966282.637,
+                    'body': 'jiawefjilawe',
+                    'metadata': {},
+                    'queue_name': 'a queue'
+                },
+                {
+                    'message_id': 'ae45017a1d4311e19562002500f0fa7c',
+                    'timestamp': 1323973966918.241,
+                    'body': 'auwiofuweni3',
+                    'metadata': {},
+                    'queue_name': 'other queue'
+                },
             ]
 
         The messages will be ordered based on the ``order`` param using
@@ -68,77 +77,116 @@ class MessageQueueBackend(Interface):
 
         .. note::
 
-            The message body is considered raw string data and should
-            have no encoding/decoding performed on it.
+            The limit is applied per queue_name, so a limit of 10 with 3
+            queue names supplied could return up to 30 messages.
 
         """
 
-    def push(self, queue_name, message, ttl=3600 * 24 * 3):
+    def retrieve(self, consistency, application_name, queue_name, message_id,
+                 include_metadata=False):
+        """Retrieve a single message
+
+        :param consistency: Desired consistency of the read operation
+        :param application_name: Name of the application
+        :param queue_name: Queue name
+        :param message_id: Message id to retrieve
+        :param include_metadata: Whether to include message metadata
+
+        :returns: A dict
+        :rtype: list
+
+        Example response::
+
+        {
+            'message_id': 'ae45017a1d4311e19562002500f0fa7c',
+            'timestamp': 1323973966918.241,
+            'body': 'auwiofuweni3',
+            'metadata': {}
+        }
+
+        """
+
+    def push(self, consistency, application_name, queue_name, message,
+             metadata=None, ttl=3600 * 24 * 3):
         """Push a message onto the given queue
 
         The queue is assumed to exist, and will be created if it does not
         exist.
 
+        :param consistency: Desired consistency of the write operation
+        :param application_name: Name of the application
         :param queue_name: Queue name
-        :queue_name type: string
         :param message: Message to add to the queue
-        :message type: string
+        :param metadata: Additional metadata to record for the message
+        :type metadata: dict
         :param ttl: Time to Live in seconds for the message, after this
                     period the message should be unavilable
-        :ttl type: int
 
-        :returns: The message key and timestamp as a tuple
+        :returns: The message id and timestamp as a tuple
         :rtype: tuple
 
-        """
+        Example response::
 
-    def exists(self, queue_name):
-        """Check to see if a queue of a given name exists
-
-        :param queue_name: Queue name
-        :queue_name type: string
-
-        :returns: Whether the queue exists.
-        :rtype: bool
+            ('ae45017a1d4311e19562002500f0fa7c', 1323973966918.241)
 
         """
 
-    def truncate(self, queue_name):
+    def push_batch(self, consistency, application_name, message_data):
+        """Push a batch of messages to queues
+
+        The queue(s) are assumed to exist, and will be created if
+        they do not exist.
+
+        :param consistency: Desired consistency of the write operation
+        :param application_name: Name of the application
+        :param message_data: A list of messages to insert into queues
+        :type message_data: List of tuples, where each tuple is the
+                            queue_name, message body, TTL, and a dict of
+                            message metadata.
+
+        Example message_data content::
+
+            [
+                ('my_queue', 'some message body', 3600, {}),
+                ('other_queue', 'other body', 7200, {})
+            ]
+
+        """
+
+    def truncate(self, consistency, application_name, queue_name):
         """Remove all contents of the queue
 
+        :param consistency: Desired consistency of the truncate operation
+        :param application_name: Name of the application
         :param queue_name: Queue name
-        :queue_name type: string
 
         :returns: Whether the queue was truncated.
         :rtype: bool
-        :raises: :exc:`~queuey.exceptions.QueueDoesNotExist` if the
-                 queue does not exist
 
         """
 
-    def delete(self, queue_name, *keys):
-        """Delete all the given keys from the queue
+    def delete(self, consistency, application_name, queue_name, *ids):
+        """Delete all the given message ids from the queue
 
+        :param consistency: Desired consistency of the delete operation
+        :param application_name: Name of the application
         :param queue_name: Queue name
-        :queue_name type: string
-        :param keys: Message keys that should be removed
-        :type keys: list
+        :param ids: Message ids that should be removed
 
-        :returns: Whether the delete was successful
+        :returns: Whether the delete executed successfully
         :rtype: bool
 
         """
 
-    def count(self, queue_name):
+    def count(self, consistency, application_name, queue_name):
         """Returns the amount of messages in the queue
 
+        :param consistency: Desired consistency of the read operation
+        :param application_name: Name of the application
         :param queue_name: Queue name
-        :queue_name type: string
 
         :returns: Message total
         :rtype: int
-        :raises: :exc:`~queuey.exceptions.QueueDoesNotExist` if the
-                 queue does not exist
 
         """
 
@@ -155,20 +203,7 @@ class MetadataBackend(Interface):
                  host='localhost'):
         """Initialize the backend"""
 
-    def register_application(self, application_name):
-        """Register the application
-
-        :param application_name: Name of the application
-        :application_name type: string
-
-        :returns: Whether the application was created
-        :rtype: bool
-        :raises: :exc:`~queuey.exceptions.ApplicationExists` if the
-                 application is already registered
-
-        """
-
-    def register_queue(self, application_name, queue_name, partitions):
+    def register_queue(self, application_name, queue_name, **metadata):
         """Register a queue for the given application
 
         Registers a queue for the application and when it was
@@ -176,16 +211,11 @@ class MetadataBackend(Interface):
         should be allocated.
 
         :param application_name: Name of the application
-        :application_name type: string
         :param queue_name: Queue name
-        :queue_name type: string
-        :param partitions: Amount of partitions for the queue
-        :partitions type: int
+        :param metadata: Queue metadata
 
         :returns: Whether the queue was registered
         :rtype: bool
-        :raises: :exc:`~queuey.exceptions.ApplicationNotRegistered` if
-                 the application is not registered.
 
         """
 
@@ -193,14 +223,10 @@ class MetadataBackend(Interface):
         """Remove a queue registration for the given application
 
         :param application_name: Name of the application
-        :application_name type: string
         :param queue_name: Queue name
-        :queue_name type: string
 
         :returns: Whether the queue was removed.
         :rtype: bool
-        :raises: :exc:`~queuey.exceptions.ApplicationNotRegistered` if
-                 the application is not registered.
 
         """
 
@@ -208,20 +234,20 @@ class MetadataBackend(Interface):
         """Return information regarding the queue for the application
 
         :param application_name: Name of the application
-        :application_name type: string
         :param queue_name: Queue name
-        :queue_name type: string
 
-        :returns: Queue information
+        :returns: Queue information, an empty dict if the queue doesn't
+                  exist
         :rtype: dict
-        :raises: :exc:`~queuey.exceptions.QueueDoesNotExist` if the
-                 queue does not exist
 
         Example response::
 
             {
                 'created': 82989382,
-                'partitions': 20
+                'partitions': 20,
+                'application': 'your app name',
+                'type': 'user',
+                'permissions': 'bid:fred@browserid.org,bid:george@home.com'
             }
 
         """
