@@ -1,8 +1,6 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
-from datetime import datetime
-from datetime import timedelta
 import uuid
 import time
 
@@ -82,15 +80,12 @@ class CassandraQueueBackend(object):
         delay = self._get_delay(consistency)
 
         if isinstance(start_at, str):
-            # Assume its a hex
+            # Assume its a hex, transform to a datetime
             start_at = uuid.UUID(hex=start_at)
 
         kwargs = {'read_consistency_level': cl}
         if order == 'descending':
             kwargs['column_reversed'] = True
-        elif start_at:
-            # Impose our upper bound
-            kwargs['column_finish'] = datetime.today() - timedelta(seconds=delay)
 
         if limit:
             kwargs['column_count'] = limit
@@ -220,7 +215,7 @@ class CassandraQueueBackend(object):
         queue_name = '%s:%s' % (application_name, queue_name)
         self.message_fam.remove(key=queue_name,
                                 columns=[uuid.UUID(hex=x) for x in keys],
-                                write_consistency=cl)
+                                write_consistency_level=cl)
         return True
 
     def count(self, consistency, application_name, queue_name):
@@ -235,8 +230,7 @@ class CassandraMetadata(object):
     implements(MetadataBackend)
 
     def __init__(self, username=None, password=None, database='MetadataStore',
-                 host='localhost', read_consistency=None,
-                 write_consistency=None):
+                 host='localhost'):
         """Create a Cassandra backend for the Message Queue
 
         :param host: Hostname, accepts either an IP, hostname, hostname:port,
@@ -244,7 +238,6 @@ class CassandraMetadata(object):
 
         """
         hosts = parse_hosts(host)
-        self.row_key = '__APPLICATIONS__'
         self.pool = pool = pycassa.ConnectionPool(
             keyspace=database,
             server_list=hosts,
@@ -293,6 +286,7 @@ class CassandraMetadata(object):
         cl = self.cl or LOCAL_QUORUM
         app_expr = create_index_expression('application', application_name)
         if offset:
+            offset = '%s:%s' % (application_name, offset)
             clause = create_index_clause([app_expr], start_key=offset,
                                          count=limit)
         else:
