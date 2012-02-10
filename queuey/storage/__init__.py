@@ -93,7 +93,7 @@ class MessageQueueBackend(Interface):
         :param include_metadata: Whether to include message metadata
 
         :returns: A dict
-        :rtype: list
+        :rtype: dict
 
         Example response::
 

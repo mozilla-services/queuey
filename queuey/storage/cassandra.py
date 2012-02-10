@@ -1,6 +1,8 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
+from datetime import datetime
+from datetime import timedelta
 import uuid
 import time
 
@@ -14,12 +16,9 @@ from queuey.exceptions import QueueDoesNotExist
 from queuey.storage import MessageQueueBackend
 from queuey.storage import MetadataBackend
 
-CL = {
-    'any': pycassa.ConsistencyLevel.ANY,
-    'one': pycassa.ConsistencyLevel.ONE,
-    'local_quorum': pycassa.ConsistencyLevel.LOCAL_QUORUM,
-    'each_quorum': pycassa.ConsistencyLevel.EACH_QUORUM,
-}
+ONE = pycassa.ConsistencyLevel.ONE
+LOCAL_QUORUM = pycassa.ConsistencyLevel.LOCAL_QUORUM
+EACH_QUORUM = pycassa.ConsistencyLevel.EACH_QUORUM
 
 
 def parse_hosts(raw_hosts):
@@ -40,8 +39,7 @@ class CassandraQueueBackend(object):
     implements(MessageQueueBackend)
 
     def __init__(self, username=None, password=None, database='MessageStore',
-                 host='localhost', delay=None, read_consistency=None,
-                 write_consistency=None):
+                 host='localhost', base_delay=None):
         """Create a Cassandra backend for the Message Queue
 
         :param host: Hostname, accepts either an IP, hostname, hostname:port,
@@ -53,49 +51,141 @@ class CassandraQueueBackend(object):
             keyspace=database,
             server_list=hosts,
         )
-        self.store_fam = sf = pycassa.ColumnFamily(pool, 'Stores')
-        self.delay = int(delay) if delay else None
-        sf.read_consistency_level = CL.get(read_consistency) or CL['one']
-        sf.write_consistency_level = CL.get(write_consistency) or CL['one']
+        self.message_fam = pycassa.ColumnFamily(pool, 'Messages')
+        self.meta_fam = pycassa.ColumnFamily(pool, 'MessageMetadata')
+        self.delay = int(base_delay) if base_delay else None
+        self.cl = ONE if len(hosts) < 2 else None
 
-    def retrieve(self, queue_name, limit=None, timestamp=None,
-                 order="descending"):
-        """Retrieve a message off the queue"""
-        kwargs = {}
+    def _get_cl(self, consistency):
+        """Return the consistency operation to use"""
+        if consistency == 'weak':
+            return ONE
+        elif consistency == 'very_strong':
+            return EACH_QUORUM
+        else:
+            return LOCAL_QUORUM
+
+    def _get_delay(self, consistency):
+        """Return the delay value to use for the results"""
+        if self.cl:
+            return 0
+        elif consistency == 'weak':
+            return 1 + self.delay
+        elif consistency == 'very_strong':
+            return 600 + self.delay
+        else:
+            return 5 + self.delay
+
+    def retrieve_batch(self, consistency, application_name, queue_names,
+                       limit=None, include_metadata=False, start_at=None,
+                       order="ascending"):
+        """Retrieve a batch of messages off the queue"""
+        cl = self.cl or self._get_cl(consistency)
+        delay = self._get_delay(consistency)
+
+        if isinstance(start_at, str):
+            # Assume its a hex
+            start_at = uuid.UUID(hex=start_at)
+
+        kwargs = {'read_consistency_level': cl}
         if order == 'descending':
             kwargs['column_reversed'] = True
+        elif start_at:
+            # Impose our upper bound
+            kwargs['column_finish'] = datetime.today() - timedelta(seconds=delay)
 
         if limit:
             kwargs['column_count'] = limit
 
-        if timestamp:
-            kwargs['column_start'] = timestamp
+        if start_at:
+            kwargs['column_start'] = start_at
 
+        queue_names = ['%s:%s' % (application_name, x) for x in queue_names]
         try:
-            results = self.store_fam.get(key=queue_name, **kwargs)
+            results = self.message_fam.multiget(keys=queue_names, **kwargs)
         except pycassa.NotFoundException:
             return []
 
-        # We don't return results newer than 'delay' seconds ago
-        if self.delay:
+        results = results.items()
+        if delay:
             cut_off = time.time() - self.delay
             # Turn it into time in ns, for efficient comparison
             cut_off = cut_off * 1e9 / 100 + 0x01b21dd213814000L
-            results = filter(lambda x: x[0].time < cut_off, results.items())
-        else:
-            results = results.items()
 
-        # Create the tuples by extracting the timestamp from the
-        # time UUID
-        for index, content in enumerate(results):
-            seconds = (content[0].time - 0x01b21dd213814000L) / 1e7
-            results[index] = (content[0], seconds, content[1])
-        return results
+        result_list = []
+        msg_hash = {}
+        for queue_name, messages in results:
+            for msg_id, body in messages.items():
+                if delay and msg_id.time >= cut_off:
+                    continue
+                obj = {
+                    'message_id': msg_id.hex,
+                    'timestamp': (msg_id.time - 0x01b21dd213814000L) / 1e7,
+                    'body': body,
+                    'metadata': {},
+                    'queue_name': queue_name.split(':')[1]
+                }
+                result_list.append(obj)
+                msg_hash[msg_id] = obj
 
-    def push(self, queue_name, message, ttl=60 * 60 * 24 * 3):
+        # Get metadata?
+        if include_metadata:
+            try:
+                results = self.meta_fam.multiget(keys=msg_hash.keys())
+            except pycassa.NotFoundException:
+                results = []
+            for msg_id, metadata in results.items():
+                msg_hash[msg_id]['metadata'] = metadata
+        return result_list
+
+    def retrieve(self, consistency, application_name, queue_name, message_id,
+                 include_metadata=False):
+        """Retrieve a single message"""
+        cl = self.cl or self._get_cl(consistency)
+        if isinstance(message_id, str):
+            # Convert to uuid for lookup
+            message_id = uuid.UUID(hex=message_id)
+
+        kwargs = {
+            'read_consistency_level': cl,
+            'columns': [message_id]}
+        queue_name = '%s:%s' % (application_name, queue_name)
+        try:
+            results = self.message_fam.get(key=queue_name, **kwargs)
+        except pycassa.NotFoundException:
+            return {}
+        msg_id, body = results.items()[0]
+
+        obj = {
+            'message_id': msg_id.hex,
+            'timestamp': (msg_id.time - 0x01b21dd213814000L) / 1e7,
+            'body': body,
+            'metadata': {},
+            'queue_name': queue_name.split(':')[1]
+        }
+
+        # Get metadata?
+        if include_metadata:
+            try:
+                results = self.meta_fam.get(key=msg_id)
+                obj['metadata'] = results
+            except pycassa.NotFoundException:
+                pass
+        return obj
+
+    def push(self, consistency, application_name, queue_name, message,
+             metadata=None, ttl=60 * 60 * 24 * 3):
         """Push a message onto the queue"""
         now = uuid.uuid1()
-        self.store_fam.insert(key=queue_name, columns={now: message}, ttl=ttl)
+        queue_name = '%s:%s' % (application_name, queue_name)
+        if metadata:
+            batch = pycassa.batch.Mutator(self.pool)
+            batch.insert(self.message_fam, key=queue_name,
+                         columns={now: message}, ttl=ttl)
+            batch.insert(self.meta_fam, key=now, columns=metadata, ttl=ttl)
+            batch.send()
+        else:
+            self.message_fam.insert(key=queue_name, columns={now: message}, ttl=ttl)
         timestamp = (now.time - 0x01b21dd213814000L) / 1e7
         return now.hex, timestamp
 
