@@ -1,9 +1,11 @@
 *.egg
 *.egg-info
 *.pyc
+*.pid
 *$py.class
 *.pt.py
 *.txt.py
+*.ropeproject
 .Python
 .channel
 src/
@@ -19,7 +21,7 @@ lib/
 man/
 include/
 cassandra.pid
-./cassandra
+cassandra
 deps
 docs/_build
 zookeeper.out
