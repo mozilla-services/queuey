@@ -12,7 +12,7 @@ create column family Messages
 
 create column family MessageMetadata
     with comparator = UTF8Type
-    and key_validation_class = UTF8Type
+    and key_validation_class = UUIDType
     and rows_cached = 1000
     and default_validation_class = UTF8Type
     and compression_options = [{
