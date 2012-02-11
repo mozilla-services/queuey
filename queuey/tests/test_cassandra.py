@@ -3,9 +3,12 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 import unittest
 import uuid
+import time
 import os
 
 from nose.tools import eq_
+from nose.tools import raises
+from pycassa import ConsistencyLevel
 
 
 class TestCassandraStore(unittest.TestCase):
@@ -23,19 +26,80 @@ class TestCassandraStore(unittest.TestCase):
         eq_(hosts,
             ['192.168.2.1:9160', '192.168.2.3:9180', '192.168.2.19:9160'])
 
+    def test_cl(self):
+        backend = self._makeOne()
+        backend.cl = None
+        eq_(ConsistencyLevel.ONE, backend._get_cl('weak'))
+        eq_(ConsistencyLevel.EACH_QUORUM, backend._get_cl('very_strong'))
+        eq_(ConsistencyLevel.LOCAL_QUORUM, backend._get_cl('medium'))
+
+    def test_delay(self):
+        backend = self._makeOne()
+        eq_(0, backend._get_delay('weak'))
+        backend.cl = None
+        eq_(1, backend._get_delay('weak'))
+        eq_(600, backend._get_delay('very_strong'))
+        eq_(5, backend._get_delay('medium'))
+
+    def test_delayed_messages(self):
+        backend = self._makeOne()
+        payload = 'a rather boring payload'
+        queue_name = uuid.uuid4().hex
+        backend.push('weak', 'myapp', queue_name, payload)
+        backend._get_delay = lambda x: 5
+        existing = backend.retrieve_batch('very_strong', 'myapp', [queue_name])
+        eq_(0, len(existing))
+
     def test_noqueue(self):
         backend = self._makeOne()
         queue_name = uuid.uuid4().hex
-        existing = backend.retrieve_batch('weak', 'myapp', queue_name)
+        existing = backend.retrieve_batch('weak', 'myapp', [queue_name])
         eq_([], existing)
 
     def test_onemessage(self):
         backend = self._makeOne()
         payload = 'a rather boring payload'
         queue_name = uuid.uuid4().hex
-        backend.push('weak', 'myapp', queue_name, payload)
+        msg_id = backend.push('weak', 'myapp', queue_name, payload)[0]
         existing = backend.retrieve_batch('weak', 'myapp', [queue_name])
         eq_(existing[0]['body'], payload)
+
+        # Retrieve just one message
+        one = backend.retrieve('weak', 'myapp', queue_name, msg_id)
+        eq_(one['body'], payload)
+
+        # Empty metadata
+        one = backend.retrieve('weak', 'myapp', queue_name, msg_id,
+                               include_metadata=True)
+        eq_(one['metadata'], {})
+
+    def test_push_batch(self):
+        backend = self._makeOne()
+        queue_name = uuid.uuid4().hex
+        queue_name2 = uuid.uuid4().hex
+        backend.push_batch('weak', 'myapp', [
+            (queue_name, 'first message', 3600, {}),
+            (queue_name, 'second message', 3600, {'ContentType': 'application/json'}),
+            (queue_name2, 'another first', 3600, {}),
+        ])
+        batch = backend.retrieve_batch('weak', 'myapp', [queue_name],
+                                       include_metadata=True)
+        eq_(batch[0]['body'], 'first message')
+        eq_(batch[1]['metadata'], {'ContentType': 'application/json'})
+
+    def test_must_use_list(self):
+        @raises(Exception)
+        def testit():
+            backend = self._makeOne()
+            queue_name = uuid.uuid4().hex
+            backend.retrieve_batch('weak', 'myapp', queue_name)
+        testit()
+
+    def test_no_message(self):
+        backend = self._makeOne()
+        queue_name = uuid.uuid4().hex
+        existing = backend.retrieve('weak', 'myapp', queue_name, queue_name)
+        eq_({}, existing)
 
     def test_message_ordering(self):
         backend = self._makeOne()

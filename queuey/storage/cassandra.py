@@ -3,6 +3,7 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 import uuid
 import time
+import pdb
 
 import pycassa
 from pycassa.index import create_index_expression
@@ -49,7 +50,7 @@ class CassandraQueueBackend(object):
         )
         self.message_fam = pycassa.ColumnFamily(pool, 'Messages')
         self.meta_fam = pycassa.ColumnFamily(pool, 'MessageMetadata')
-        self.delay = int(base_delay) if base_delay else None
+        self.delay = int(base_delay) if base_delay else 0
         self.cl = ONE if len(hosts) < 2 else None
 
     def _get_cl(self, consistency):
@@ -76,6 +77,9 @@ class CassandraQueueBackend(object):
                        limit=None, include_metadata=False, start_at=None,
                        order="ascending"):
         """Retrieve a batch of messages off the queue"""
+        if not isinstance(queue_names, list):
+            raise Exception("queue_names must be a list")
+
         cl = self.cl or self._get_cl(consistency)
         delay = self._get_delay(consistency)
 
@@ -94,14 +98,10 @@ class CassandraQueueBackend(object):
             kwargs['column_start'] = start_at
 
         queue_names = ['%s:%s' % (application_name, x) for x in queue_names]
-        try:
-            results = self.message_fam.multiget(keys=queue_names, **kwargs)
-        except pycassa.NotFoundException:
-            return []
-
+        results = self.message_fam.multiget(keys=queue_names, **kwargs)
         results = results.items()
         if delay:
-            cut_off = time.time() - self.delay
+            cut_off = time.time() - delay
             # Turn it into time in ns, for efficient comparison
             cut_off = cut_off * 1e9 / 100 + 0x01b21dd213814000L
 
@@ -123,10 +123,7 @@ class CassandraQueueBackend(object):
 
         # Get metadata?
         if include_metadata:
-            try:
-                results = self.meta_fam.multiget(keys=msg_hash.keys())
-            except pycassa.NotFoundException:
-                results = []
+            results = self.meta_fam.multiget(keys=msg_hash.keys())
             for msg_id, metadata in results.items():
                 msg_hash[msg_id]['metadata'] = metadata
         return result_list
