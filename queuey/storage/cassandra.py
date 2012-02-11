@@ -3,7 +3,6 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 import uuid
 import time
-import pdb
 
 import pycassa
 from pycassa.index import create_index_expression
