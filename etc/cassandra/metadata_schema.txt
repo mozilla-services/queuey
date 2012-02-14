@@ -36,6 +36,6 @@ create column family Queues
         validation_class: UTF8Type,
         index_type: KEYS
     }, {
-        column_name: permissions,
+        column_name: consistency,
         validation_class: UTF8Type
     }];
