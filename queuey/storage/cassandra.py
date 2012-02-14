@@ -1,6 +1,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
+import inspect
 import uuid
 import time
 
@@ -11,6 +12,7 @@ from zope.interface import implements
 
 from queuey.storage import MessageQueueBackend
 from queuey.storage import MetadataBackend
+from queuey.storage import StorageUnavailable
 
 ONE = pycassa.ConsistencyLevel.ONE
 LOCAL_QUORUM = pycassa.ConsistencyLevel.LOCAL_QUORUM
@@ -31,6 +33,29 @@ def parse_hosts(raw_hosts):
     return hosts
 
 
+def wrap_func(func):
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except (pycassa.UnavailableException, pycassa.TimedOutException):
+            raise StorageUnavailable("Unable to contact storage pool")
+    for attr in "__module__", "__name__", "__doc__":
+        setattr(wrapper, attr, getattr(func, attr))
+    return wrapper
+
+
+def raise_unavailable(cls):
+    """Wrap public method calls to return appropriate exception in the
+    event the cluster is unavailable or has insufficient nodes available
+    for the operation"""
+    for name, meth in inspect.getmembers(cls, inspect.ismethod):
+        if name.startswith('_'):
+            continue
+        setattr(cls, name, wrap_func(meth))
+    return cls
+
+
+@raise_unavailable
 class CassandraQueueBackend(object):
     implements(MessageQueueBackend)
 
@@ -222,6 +247,7 @@ class CassandraQueueBackend(object):
                                           read_consistency_level=cl)
 
 
+@raise_unavailable
 class CassandraMetadata(object):
     implements(MetadataBackend)
 

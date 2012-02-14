@@ -29,11 +29,20 @@ def configure_from_settings(object_name, settings):
     return klass(**config)
 
 
+class StorageUnavailable(BaseException):
+    """Raised when the storage backend is unavailable"""
+
+
 class MessageQueueBackend(Interface):
     """A MessageQueue Backend"""
     def __init__(self, username=None, password=None, database='MessageQueue',
                  host='localhost'):
-        """Initialize the backend"""
+        """Initialize the backend
+
+        If any operation fails due to servers being unavailable, the
+        :exc:`StorageUnavailable` exception should be raised.
+
+        """
 
     def retrieve_batch(self, consistency, application_name, queue_names,
                        limit=None, include_metadata=False, start_at=None,

@@ -3,12 +3,14 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 import unittest
 import uuid
-import time
 import os
 
 from nose.tools import eq_
 from nose.tools import raises
 from pycassa import ConsistencyLevel
+import pycassa
+
+import mock
 
 
 class TestCassandraStore(unittest.TestCase):
@@ -100,6 +102,26 @@ class TestCassandraStore(unittest.TestCase):
         queue_name = uuid.uuid4().hex
         existing = backend.retrieve('weak', 'myapp', queue_name, queue_name)
         eq_({}, existing)
+
+    def test_unavailable(self):
+        from queuey.storage import StorageUnavailable
+        mock_pool = mock.Mock(spec=pycassa.ColumnFamily)
+        mock_cf = mock.Mock()
+        mock_pool.return_value = mock_cf
+
+        def explode(*args, **kwargs):
+            raise pycassa.UnavailableException()
+
+        mock_cf.get.side_effect = explode
+
+        with mock.patch('pycassa.ColumnFamily', mock_pool):
+            backend = self._makeOne()
+
+            @raises(StorageUnavailable)
+            def testit():
+                queue_name = uuid.uuid4().hex
+                backend.retrieve('strong', 'myapp', queue_name, queue_name)
+            testit()
 
     def test_message_ordering(self):
         backend = self._makeOne()
