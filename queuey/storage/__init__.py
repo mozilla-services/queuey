@@ -267,6 +267,9 @@ class MetadataBackend(Interface):
     def queue_information(self, application_name, queue_name):
         """Return information regarding the queue for the application
 
+        This is a mix of basic queue information as well as the
+        queue metadata.
+
         :param application_name: Name of the application
         :param queue_name: Queue name
 
@@ -281,6 +284,7 @@ class MetadataBackend(Interface):
                 'partitions': 20,
                 'application': 'your app name',
                 'type': 'user',
+                'consistency': 'strong',
                 'permissions': 'bid:fred@browserid.org,bid:george@home.com'
             }
 

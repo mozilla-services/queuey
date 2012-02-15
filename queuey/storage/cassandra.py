@@ -283,6 +283,8 @@ class CassandraMetadata(object):
             pass
 
         metadata['application'] = application_name
+        if 'created' not in metadata:
+            metadata['created'] = time.time()
         self.queue_fam.insert(queue_name, columns=metadata,
                               write_consistency_level=cl)
         self.metric_fam.add(application_name, column='queue_count', value=1,
