@@ -1,5 +1,5 @@
 create keyspace MessageStore
-    with strategy_options=[{replication_factor:1}]
+    with strategy_options={replication_factor:1}
     and placement_strategy = 'org.apache.cassandra.locator.SimpleStrategy';
 
 use MessageStore;
