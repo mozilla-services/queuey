@@ -3,11 +3,13 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 import os
 
+from pyramid.authorization import ACLAuthorizationPolicy
 from pyramid.config import Configurator
 
 from mozsvc.config import Config
 
 from queuey.resources import Root
+from queuey.security import QueueyAuthenticationPolicy
 from queuey.storage import configure_from_settings
 
 
@@ -27,7 +29,12 @@ def main(global_config, **settings):
         for name, value in config.get_map(section).iteritems():
             settings[setting_prefix + "." + name] = value
 
-    config = Configurator(root_factory=Root, settings=settings)
+    config = Configurator(
+        root_factory=Root,
+        settings=settings,
+        authentication_policy=QueueyAuthenticationPolicy(),
+        authorization_policy=ACLAuthorizationPolicy()
+    )
 
     config.registry['backend_storage'] = configure_from_settings(
         'storage', settings['config'].get_map('storage'))
@@ -41,12 +48,10 @@ def main(global_config, **settings):
         for item in v:
             app_keys[item] = k
     config.registry['app_keys'] = app_keys
+    config.registry['app_names'] = app_vals.keys()
 
     # adds Mozilla default views
     config.include("mozsvc")
-
-    # adds cornice
-    config.include("cornice")
 
     config.scan('queuey.views')
     return config.make_wsgi_app()

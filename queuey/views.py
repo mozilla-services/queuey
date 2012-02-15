@@ -3,40 +3,41 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 import random
 
-from cornice.service import Service
+import colander
+from pyramid.view import view_config
 
-from queuey.exceptions import ApplicationNotRegistered
-from queuey.validators import appkey_check
-from queuey.validators import delete_check
-from queuey.validators import message_get_check
-from queuey.validators import messagebody_check
-from queuey.validators import queuename_check
-from queuey.validators import queuename_postcheck
-from queuey.validators import partition_check
-from queuey.validators import partionheader_check
+from queuey import validators
+
+from queuey.resources import Application
+from queuey.resources import Queue
 
 
-# Services
-message_queue = Service(name='message_queues', path='/queue/')
-queues = Service(name='queues', path='/queue/{queue_name:[a-z0-9]{32}}/')
+# Our invalid catch-all
+@view_config(context=colander.Invalid, renderer='json')
+def bad_params(context, request):
+    errors = request.exception.asdict()
+    return {
+        'status': 'error',
+        'error_msg': errors
+    }
 
 
-@message_queue.post(permission='create_queue',
-                    validators=(appkey_check, partition_check,
-                                queuename_postcheck))
-def new_queue(request):
+@view_config(context=Application, request_method='POST', renderer='json',
+             permission='create_queue')
+def create_queue(context, request):
     """Create a new queue
-
-    Headers
-
-        Authorization - Application authorization key
-        Authorization - (`Optional`) Browser ID token
 
     POST params
 
         queue_name - (`Optional`) Name of the queue to create
         partitions - (`Optional`) How many partitions the queue should
                      have (defaults to 1)
+        type       - (`Optional`) Type of queue to create, defaults to
+                     'private' which requires authentication to access
+        consistency - (`Optional`) Level of consistency for the queue,
+                      defaults to 'strong'.
+        permissions - (`Optional`) List of BrowserID's separated with a
+                      comma if there's more than one
 
     Returns a JSON response indicating the status, the UUID4 hex
     string of the queue name (if not supplied), and the partitions
@@ -48,140 +49,57 @@ def new_queue(request):
             'status': 'ok',
             'application_name': 'notifications',
             'queue_name': 'ea2f39c0de9a4b9db6463123641631de',
-            'partitions': 1
+            'partitions': 1,
+            'type': 'user',
+            'consistency': 'strong'
         }
 
     """
-    partitions = request.validated['partitions']
-    meta = request.registry['backend_metadata']
-    queue_name = request.validated['queue_name']
-    try:
-        meta.register_queue(request.app_key, queue_name, partitions)
-    except ApplicationNotRegistered:
-        meta.register_application(request.app_key)
-        meta.register_queue(request.app_key, queue_name, partitions)
+    schema = validators.NewQueue().bind()
+    params = schema.deserialize(request.POST)
+    context.register_queue(**params)
+    return dict(status='ok', application_name=context.application_name,
+                **params)
 
+
+@view_config(context=Application, request_method='GET', renderer='json',
+             permission='view_queues')
+def queue_list(context, request):
+    params = validators.QueueList().deserialize(request.GET)
     return {
         'status': 'ok',
-        'application_name': request.app_name,
-        'queue_name': queue_name,
-        'partitions': partitions,
+        'queues': context.queue_list(**params)
     }
 
 
-@message_queue.get(permission='view_queue',
-                   validators=(appkey_check, queuename_check))
-def get_queue(request):
-    """Get queue information
-
-    Headers
-
-        X-Application-Key - The applications key
-
-    Query Params
-
-        queue_name - The name of a specific queue to retrieve
-                     information about
-
-    Returns a JSON response indicating the status, and the information
-    about the queue.
-
-    Example response::
-
-        {
-            'status': 'ok',
-            'application_name': 'notifications',
-            'queue_name': 'ea2f39c0de9a4b9db6463123641631de',
-            'partitions': 1,
-            'created': 1322521547,
-            'count': 932
-        }
-
-    """
-    queue_name = request.validated['queue_name']
-    meta = request.registry['backend_metadata']
-    storage = request.registry['backend_storage']
-    queue_info = meta.queue_information(request.app_key, queue_name)
-    count = 0
-    for num in range(1, queue_info['partitions'] + 1):
-        count += storage.count('%s-%s' % (queue_name, num))
-    queue_info['status'] = 'ok'
-    queue_info['application_name'] = request.app_name
-    queue_info['count'] = count
-    return queue_info
-
-
-@queues.delete(permission='delete_queue',
-               validators=(appkey_check, partionheader_check, delete_check))
-def delete_queue(request):
-    """Delete a queue
-
-    Headers
-
-        X-Application-Key - The applications key
-        X-Partition - (`Optional`) A specific partition number to
-                      delete from.
-
-    URL Params
-
-        queue_name - A UUID4 hex string to use as the queue name.
-
-    JSON Body Params (`Optional`)
-
-        messages - A list of message keys to delete
-
-    Query Params
-
-        delete - (`Optional`) If set to false, the queue will be deleted
-                 but remain registered
-
-    Example success response::
-
-        {'status': 'ok'}
-
-    If individual messages are being deleted, the partition will default
-    to partition 1 if no ``X-Partition`` header is supplied.
-
-    """
-    queue_name = request.matchdict['queue_name']
-    storage = request.registry['backend_storage']
-    meta = request.registry['backend_metadata']
-    if 'messages' in request.validated:
-        partition = request.validated.get('partition', 1)
-        storage.delete('%s-%s' % (queue_name, partition),
-                       *request.validated['messages'])
-    else:
-        info = meta.queue_information(request.app_key, queue_name)
-        partitions = info['partitions']
-
-        for num in range(1, partitions + 1):
-            storage.truncate('%s-%s' % (queue_name, num))
-
-    if request.validated.get('delete') != 'false':
-        meta.remove_queue(request.app_key, queue_name)
-    return {'status': 'ok'}
-
-
-@queues.post(permission='new_message',
-             validators=(appkey_check, partionheader_check, messagebody_check))
-def new_message(request):
+@view_config(context=Queue, request_method='POST', renderer='json',
+             permission='create')
+def new_message(context, request):
     """Post a message to a queue
 
-    Headers
+    POST params
 
-        X-Application-Key - The applications key
-        X-Partition - (`Optional`) A specific partition number to
-                      insert the message into. Defaults to a random
-                      partition number for the amount of partitions
-                      registered.
+        A form body containing a single message and optional partition
+        value, or a set of message and partition pairs by number.
 
-    URL Params
+        Example single message (shown as dict)::
 
-        queue_name - A UUID4 hex string to use as the queue name.
+            {
+                'message': 'this is a message',
+                'partition': '1'
+            }
 
-    POST body
+        Example multiple message (shown as dict)::
 
-        A message string to store.
+            {
+                'message-1': 'this is message 1',
+                'message-2': 'this is message 2',
+                'partition-2': '3'
+            }
+
+        The second example lets the first message go to the default
+        partition (1), while the second message is sent to partition
+        2.
 
     Example success response::
 
@@ -212,18 +130,10 @@ def new_message(request):
     }
 
 
-@queues.get(permission='view_message',
-            validators=(appkey_check, message_get_check))
+@view_config(context=Queue, request_method='GET', renderer='json',
+             permission='view')
 def get_messages(request):
     """Get messages from a queue
-
-    Headers
-
-        X-Application-Key - The applications key
-
-    URL Params
-
-        queue_name - A UUID4 hex string to use as the queue name.
 
     Query Params
 
@@ -269,3 +179,76 @@ def get_messages(request):
         'timestamp': timestamp,
         'body': body} for key, timestamp, body in messages]
     return {'status': 'ok', 'messages': message_data}
+
+
+@view_config(context=Queue, name='info', request_method='GET', renderer='json',
+             permission='view')
+def queue_info(context, request):
+    """Get queue information
+
+    Returns a JSON response indicating the status, and the information
+    about the queue.
+
+    Example response::
+
+        {
+            'status': 'ok',
+            'application_name': 'notifications',
+            'queue_name': 'ea2f39c0de9a4b9db6463123641631de',
+            'partitions': 1,
+            'created': 1322521547,
+            'count': 932
+        }
+
+    """
+    return dict(
+        status='ok',
+        application_name=context.application,
+        queue_name=context.queue_name,
+        partitions=context.partitions,
+        created=context.created,
+        count=context.count
+    )
+
+
+def delete_queue(request):
+    """Delete a queue
+
+    URL Params
+
+        queue_name - A UUID4 hex string to use as the queue name.
+
+    JSON Body Params (`Optional`)
+
+        messages - A list of message keys to delete
+
+    Query Params
+
+        delete - (`Optional`) If set to false, the queue will be deleted
+                 but remain registered
+
+    Example success response::
+
+        {'status': 'ok'}
+
+    If individual messages are being deleted, the partition will default
+    to partition 1 if no ``X-Partition`` header is supplied.
+
+    """
+    queue_name = request.matchdict['queue_name']
+    storage = request.registry['backend_storage']
+    meta = request.registry['backend_metadata']
+    if 'messages' in request.validated:
+        partition = request.validated.get('partition', 1)
+        storage.delete('%s-%s' % (queue_name, partition),
+                       *request.validated['messages'])
+    else:
+        info = meta.queue_information(request.app_key, queue_name)
+        partitions = info['partitions']
+
+        for num in range(1, partitions + 1):
+            storage.truncate('%s-%s' % (queue_name, num))
+
+    if request.validated.get('delete') != 'false':
+        meta.remove_queue(request.app_key, queue_name)
+    return {'status': 'ok'}
