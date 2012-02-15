@@ -38,7 +38,7 @@ class Application(object):
         ]
 
     def __getitem__(self, name):
-        if name > 50:
+        if len(name) > 50:
             raise InvalidQueueName("Queue name longer than 50 characters.")
         data = self.metadata.queue_information(self.application_name, name)
         if not data:
@@ -73,14 +73,20 @@ class Queue(object):
         # Applications are always allowed to create message in queues
         # they made
         app_id = 'app:%s' % self.application
-        acl = [(Allow, app_id, 'create')]
+        self.__acl__ = acl = [
+            (Allow, app_id, 'create'),
+            (Allow, app_id, 'info')
+        ]
 
-        # If there's additional permissions, view/delete messages will
+        # If there's additional permissions, view/info/delete messages will
         # be granted to them
         if 'permissions' in queue_data:
             for permission in queue_data['permissions'].split(','):
-                acl.append((Allow, permission, 'view'))
-                acl.append((Allow, permission, 'delete'))
+                acl.extend([
+                    (Allow, permission, 'view'),
+                    (Allow, permission, 'info'),
+                    (Allow, permission, 'delete')
+                ])
         else:
             # If there are no additional permissions, the application
             # may also view messages in the queue
@@ -90,12 +96,10 @@ class Queue(object):
         if queue_data['type'] == 'public':
             acl.append((Allow, Everyone, 'view'))
 
-        self.__acl__ = acl
-
     @property
     def count(self):
         total = 0
         for num in range(self.partitions):
             qn = '%s-%s' % (self.queue_name, num + 1)
-            total += self.storage.count(self.application, qn)
+            total += self.storage.count(self.consistency, self.application, qn)
         return total
