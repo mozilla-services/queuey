@@ -3,7 +3,6 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 import random
 
-import colander
 from pyramid.view import view_config
 
 from queuey import validators
@@ -12,10 +11,18 @@ from queuey.resources import Application
 from queuey.resources import Queue
 
 
-# Our invalid catch-all
-@view_config(context=colander.Invalid, renderer='json')
+# Our invalid schema catch-all
+@view_config(context='colander.Invalid', renderer='json')
+@view_config(context='queuey.security.InvalidBrowserID', renderer='json')
+@view_config(context='queuey.security.InvalidApplicationKey', renderer='json')
+@view_config(context='queuey.resources.InvalidQueueName', renderer='json')
 def bad_params(context, request):
-    errors = request.exception.asdict()
+    exc = request.exception
+    cls_name = exc.__class__.__name__
+    if cls_name == 'Invalid':
+        errors = exc.asdict()
+    else:
+        errors = {cls_name: exc.message}
     return {
         'status': 'error',
         'error_msg': errors
@@ -182,7 +189,7 @@ def get_messages(request):
 
 
 @view_config(context=Queue, name='info', request_method='GET', renderer='json',
-             permission='view')
+             permission='info')
 def queue_info(context, request):
     """Get queue information
 
