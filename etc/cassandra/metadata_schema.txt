@@ -30,7 +30,7 @@ create column family Queues
         index_type: KEYS
     }, {
         column_name: created,
-        validation_class: DateType
+        validation_class: Float
     }, {
         column_name: type,
         validation_class: UTF8Type,
