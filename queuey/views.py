@@ -11,6 +11,10 @@ from queuey.resources import Application
 from queuey.resources import Queue
 
 
+def _fixup_dict(dct):
+    return dict(('.' + k, v) for k, v in dct.items())
+
+
 # Our invalid schema catch-all
 @view_config(context='colander.Invalid', renderer='json')
 @view_config(context='queuey.security.InvalidBrowserID', renderer='json')
@@ -92,21 +96,22 @@ def new_message(context, request):
         Example single message (shown as dict)::
 
             {
-                'message': 'this is a message',
+                'body': 'this is a message',
                 'partition': '1'
             }
 
         Example multiple message (shown as dict)::
 
             {
-                'message-1': 'this is message 1',
-                'message-2': 'this is message 2',
-                'partition-2': '3'
+                'message.0.body': 'this is message 1',
+                'message.0.ttl': '3600',
+                'message.1.body': 'this is message 2',
+                'message.1.partition': '3'
             }
 
         The second example lets the first message go to the default
         partition (1), while the second message is sent to partition
-        2.
+        3.
 
     Example success response::
 
@@ -118,17 +123,23 @@ def new_message(context, request):
         }
 
     """
-    queue_name = request.matchdict['queue_name']
-    partition = request.validated.get('partition')
-    if not partition:
-        meta = request.registry['backend_metadata']
-        info = meta.queue_information(request.app_key, queue_name)
-        partitions = info['partitions']
-        partition = random.randint(1, partitions)
+    msgs = _fixup_dict(request.POST)
+    if 'body' in request.POST:
+        # Single message, use appropriate schema
+        msgs = [validators.Message().deserialize(msgs)]
+    else:
+        schema = validators.Messages()
+        try:
+            msgs = schema.unflatten(msgs)
+        except AssertionError:
+            msgs = {}
+        msgs = schema.deserialize(msgs)['message']
 
-    storage = request.registry['backend_storage']
-    message_key, timestamp = storage.push('%s-%s' % (queue_name, partition),
-                                          request.body)
+    # Assign partitions
+    for msg in msgs:
+        if not msg['partition']:
+            msg['partition'] = random.randint(1, context.partitions)
+
     return {
         'status': 'ok',
         'key': message_key,

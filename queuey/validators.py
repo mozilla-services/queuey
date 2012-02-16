@@ -65,3 +65,19 @@ class NewQueue(colander.MappingSchema):
 class QueueList(colander.MappingSchema):
     limit = colander.SchemaNode(colander.Int(), missing=None)
     offset = colander.SchemaNode(colander.String(), missing=None)
+
+
+class Message(colander.MappingSchema):
+    body = colander.SchemaNode(colander.String())
+    partition = colander.SchemaNode(colander.Int(), missing=None,
+                                    validator=colander.Range(1, 200))
+    ttl = colander.SchemaNode(colander.Int(), missing=60 * 60 * 24 * 3,
+                              validator=colander.Range(1, 60 * 60 * 24 * 3))
+
+
+class MessageList(colander.SequenceSchema):
+    message = Message()
+
+
+class Messages(colander.MappingSchema):
+    message = MessageList()
