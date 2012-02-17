@@ -26,15 +26,21 @@ Queuey Assumptions and Features:
 - RESTful HTTP API for easy access by a variety of clients, including AJAX
 - Authentication system to support multiple 'Application' access to Queuey
   with optional Browser-ID client authentication
+- A single deployment may support multiple Applications with varying
+  message delivery characteristics, and authentication restricted queue
+  access
 
 Queuey can be configured with varying message guarantees, such as:
 
 - Deliver once, and exactly once
 - Deliver at least once (and under rare conditions, maybe more)
-- Deliver usually at least once
+- Deliver no more than once (and under rare conditions, possibly not deliver)
 
 Changing the storage back-end and deployment strategies directly affects
-the message guarantee's.
+the message guarantee's. This enables the Queuey deployment to meet different
+requirements and performance thresholds.
+
+For more background on queuey, see `the Mozilla wiki section on queuey <https://wiki.mozilla.org/Services/Sagrada/Queuey>`_.
 
 Requirements
 ============
@@ -77,8 +83,7 @@ The default (Cassandra) stores its data and files inside the local cassandra
 directory so as not to interfere with any existing Cassandra installations on
 the system.
 
-In addition, you'll need to start Cassandra (See: Running the Cassandra
- Server)
+In addition, you'll need to start Cassandra (See: Running the Cassandra Server)
 and create the schema::
 
     bin/cassandra/bin/cassandra-cli -host localhost --file etc/cassandra/schema.txt
