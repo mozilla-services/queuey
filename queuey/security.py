@@ -38,7 +38,7 @@ class QueueyAuthenticationPolicy(object):
             #         data = vep.verify(assertion, request.host)
             #     except Exception:
             #         raise InvalidBrowserID("Invalid browser ID assertion")
-                effective_principals.append('bid:%s' % data['email'])
+            #     effective_principals.append('bid:%s' % data['email'])
         if len(effective_principals) > 1:
             effective_principals.append(Authenticated)
         return effective_principals
