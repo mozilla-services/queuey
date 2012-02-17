@@ -1,8 +1,6 @@
 from pyramid.security import Authenticated
 from pyramid.security import Everyone
 
-import vep
-
 
 class InvalidApplicationKey(Exception):
     """Raised when an application key is invalid"""
@@ -33,12 +31,13 @@ class QueueyAuthenticationPolicy(object):
                         effective_principals.append('application')
                 else:
                     raise InvalidApplicationKey("Invalid application key")
-            elif auth_line.startswith('BrowserID '):
-                assertion = auth_line.strip('BrowserID ').strip()
-                try:
-                    data = vep.verify(assertion, request.host)
-                except Exception:
-                    raise InvalidBrowserID("Invalid browser ID assertion")
+            # TODO: Whenever the MAC/BID stuff is determined, pull it out here
+            # elif auth_line.startswith('BrowserID '):
+            #     assertion = auth_line.strip('BrowserID ').strip()
+            #     try:
+            #         data = vep.verify(assertion, request.host)
+            #     except Exception:
+            #         raise InvalidBrowserID("Invalid browser ID assertion")
                 effective_principals.append('bid:%s' % data['email'])
         if len(effective_principals) > 1:
             effective_principals.append(Authenticated)
