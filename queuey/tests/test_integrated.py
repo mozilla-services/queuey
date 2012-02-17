@@ -17,5 +17,5 @@ class TestQueueyApp(unittest.TestCase):
 
     def test_app(self):
         app = TestApp(self.makeOne())
-        resp = app.post('/queue/', extra_environ={'REMOTE_ADDR': '127.0.0.1'}, status=400)
-        assert "You must provide a valid application key" in resp.body
+        resp = app.post('/queuey', status=403)
+        assert "Access was denied" in resp.body
