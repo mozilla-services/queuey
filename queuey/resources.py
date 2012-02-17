@@ -67,6 +67,7 @@ class Queue(object):
         self.metadata = request.registry['backend_metadata']
         self.storage = request.registry['backend_storage']
         self.queue_name = queue_name
+        self.permissions = []
         for name, value in queue_data.items():
             setattr(self, name, value)
 
@@ -82,6 +83,7 @@ class Queue(object):
         # be granted to them
         if 'permissions' in queue_data:
             for permission in queue_data['permissions'].split(','):
+                self.permissions.append(permission)
                 acl.extend([
                     (Allow, permission, 'view'),
                     (Allow, permission, 'info'),
@@ -95,6 +97,18 @@ class Queue(object):
         # Everyons is allowed to view public queues
         if queue_data['type'] == 'public':
             acl.append((Allow, Everyone, 'view'))
+
+    def push_batch(self, messages):
+        """Push a batch of messages to the storage"""
+        msgs = [(self.queue_name + ':' + str(x['partition']), x['body'],
+                 x['ttl'], {}) for x in messages]
+        results = self.storage.push_batch(self.consistency, self.application,
+                                          msgs)
+        rl = []
+        for i, msg in enumerate(results):
+            rl.append({'key': msg[0], 'timestamp': msg[1],
+                       'partition': int(msgs[i][:-1])})
+        return rl
 
     @property
     def count(self):
