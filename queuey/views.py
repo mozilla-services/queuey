@@ -117,17 +117,21 @@ def new_message(context, request):
 
         {
             'status': 'ok',
-            'key': '3a6592301e0911e190b1002500f0fa7c',
-            'timestamp': 1323976306.988889,
-            'partition': 1
+            'messages' [
+                {
+                    'key': '3a6592301e0911e190b1002500f0fa7c',
+                    'timestamp': 1323976306.988889,
+                    'partition': 1
+                },
+            ]
         }
 
     """
-    msgs = _fixup_dict(request.POST)
     if 'body' in request.POST:
         # Single message, use appropriate schema
-        msgs = [validators.Message().deserialize(msgs)]
+        msgs = [validators.Message().deserialize(request.POST)]
     else:
+        msgs = _fixup_dict(request.POST)
         schema = validators.Messages()
         try:
             msgs = schema.unflatten(msgs)
@@ -142,9 +146,7 @@ def new_message(context, request):
 
     return {
         'status': 'ok',
-        'key': message_key,
-        'timestamp': timestamp,
-        'partition': partition
+        'messages': context.push_batch(msgs)
     }
 
 
@@ -225,7 +227,8 @@ def queue_info(context, request):
         queue_name=context.queue_name,
         partitions=context.partitions,
         created=context.created,
-        count=context.count
+        count=context.count,
+        permissions=context.permissions
     )
 
 

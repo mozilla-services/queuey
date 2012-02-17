@@ -19,7 +19,6 @@ class QueueyAuthenticationPolicy(object):
         auth_header = request.headers.get('Authorization', [])
         if auth_header:
             auth_header = [x.strip() for x in auth_header.split(';')]
-
         for auth_line in auth_header:
             if auth_line.startswith('Application '):
                 app_key = auth_line.strip('Application ').strip()
