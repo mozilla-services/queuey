@@ -5,9 +5,8 @@ import re
 import uuid
 
 import colander
-import simplejson
 
-bid_match = re.compile(r'^(bid|app):\w+@\w+\.\w+$')
+bid_match = re.compile(r'^(bid:\w+@\w+\.\w+|app:\w+)$')
 
 
 @colander.deferred
@@ -23,18 +22,6 @@ _queuename_node = colander.SchemaNode(
     colander.String(), missing=default_queuename)
 
 
-# Custom JSON validator
-class JSON(object):
-    def deserialize(self, node, cstruct):
-        if cstruct is colander.null:
-            return colander.null
-        try:
-            data = simplejson.loads(cstruct)
-        except simplejson.JSONDecodeError:
-            raise colander.Invalid(node, '%r is not valid JSON data' % cstruct)
-        return data
-
-
 def permission_validator(node, value):
     if value is colander.null:
         return
@@ -45,9 +32,43 @@ def permission_validator(node, value):
         if len(results) != len(valid_ids):
             raise colander.Invalid(node, '%r is not a valid permission list.' %
                                    value)
-    elif not bid_match.match(value):
-        raise colander.Invalid(node, '%r is not a valid permission list.' %
-                               value)
+    else:
+        value = value.strip()
+        if not bid_match.match(value):
+            print value
+            raise colander.Invalid(node, '%r is not a valid permission list.' %
+                                   value)
+
+
+def comma_int_list(node, value):
+    if value is colander.null:
+        return
+    msg = ('%r is not a valid comma separated list of integers or a single '
+           'integer.' % value)
+    if ',' in value:
+        values = []
+        for val in value.split(','):
+            val = val.strip()
+            if not re.match(r'^\d+$', val):
+                raise colander.Invalid(node, msg)
+            values.append(int(val))
+        return values
+    else:
+        value = value.strip()
+        if not re.match(r'^\d+$', value):
+            raise colander.Invalid(node, msg)
+        return [int(value)]
+
+
+class GetMessages(colander.MappingSchema):
+    since = colander.SchemaNode(colander.String(), missing=None)
+    limit = colander.SchemaNode(colander.Int(), missing=None,
+                                validator=colander.Range(1, 100))
+    order = colander.SchemaNode(colander.String(), missing="descending",
+                                validator=colander.OneOf(['descending',
+                                                          'ascending']))
+    partitions = colander.SchemaNode(colander.String(), missing=[1],
+                                    validator=comma_int_list)
 
 
 class NewQueue(colander.MappingSchema):
