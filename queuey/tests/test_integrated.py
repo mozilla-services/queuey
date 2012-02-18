@@ -29,3 +29,54 @@ class TestQueueyApp(unittest.TestCase):
         resp = app.get('/queuey', headers=auth_header)
         result = json.loads(resp.body)
         eq_('ok', result['status'])
+
+    def test_make_queue_post_get_messages(self):
+        app = TestApp(self.makeOne())
+        resp = app.post('/queuey', headers=auth_header)
+        result = json.loads(resp.body)
+        queue_name = str(result['queue_name'])
+
+        # Post a message
+        resp = app.post('/queuey/' + queue_name,
+                        {'body': 'Hello there!'}, headers=auth_header)
+        result = json.loads(resp.body)
+
+        # Fetch the messages
+        resp = app.get('/queuey/' + queue_name, headers=auth_header)
+        result = json.loads(resp.body)
+        eq_(1, len(result['messages']))
+        msg = result['messages'][0]
+        eq_('Hello there!', msg['body'])
+        eq_(1, msg['partition'])
+
+    def test_queue_permissions(self):
+        app = TestApp(self.makeOne())
+        resp = app.post('/queuey', {'permissions': 'app:queuey'},
+                        headers=auth_header)
+        result = json.loads(resp.body)
+        queue_name = str(result['queue_name'])
+
+        # Get the queue info
+        resp = app.get('/queuey/%s/info' % queue_name, headers=auth_header)
+        result = json.loads(resp.body)
+        eq_(0, result['count'])
+        assert 'app:queuey' in result['permissions']
+
+    def test_make_queue_post_get_batches(self):
+        app = TestApp(self.makeOne())
+        resp = app.post('/queuey', headers=auth_header)
+        result = json.loads(resp.body)
+        queue_name = str(result['queue_name'])
+
+        # Post several messages
+        resp = app.post('/queuey/' + queue_name,
+                        {'body': 'Hello there!'}, headers=auth_header)
+        result = json.loads(resp.body)
+
+        # Fetch the messages
+        resp = app.get('/queuey/' + queue_name, headers=auth_header)
+        result = json.loads(resp.body)
+        eq_(1, len(result['messages']))
+        msg = result['messages'][0]
+        eq_('Hello there!', msg['body'])
+        eq_(1, msg['partition'])
