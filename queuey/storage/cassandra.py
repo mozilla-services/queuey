@@ -140,7 +140,7 @@ class CassandraQueueBackend(object):
                     'timestamp': (msg_id.time - 0x01b21dd213814000L) / 1e7,
                     'body': body,
                     'metadata': {},
-                    'queue_name': queue_name.split(':')[1]
+                    'queue_name': queue_name[queue_name.find(':'):]
                 }
                 result_list.append(obj)
                 msg_hash[msg_id] = obj
@@ -175,7 +175,7 @@ class CassandraQueueBackend(object):
             'timestamp': (msg_id.time - 0x01b21dd213814000L) / 1e7,
             'body': body,
             'metadata': {},
-            'queue_name': queue_name.split(':')[1]
+            'queue_name': queue_name[queue_name.find(':'):]
         }
 
         # Get metadata?
