@@ -152,19 +152,19 @@ def new_message(context, request):
 
 @view_config(context=Queue, request_method='GET', renderer='json',
              permission='view')
-def get_messages(request):
+def get_messages(context, request):
     """Get messages from a queue
 
     Query Params
 
-        since_timestamp - (`Optional`) All messages newer than this timestamp,
+        since           - (`Optional`) All messages newer than this timestamp,
                           should be formatted as seconds since epoch in GMT
         limit           - (`Optional`) Only return N amount of messages
         order           - (`Optional`) Order of messages, can be set to either
                           `ascending` or `descending`. Defaults to `descending`.
-        partition       - (`Optional`) A specific partition number to retrieve
-                          messages from. Defaults to retrieving messages from
-                          partition 1.
+        partitions       - (`Optional`) A specific partition number to retrieve
+                          messages from or a comma separated list of partitions.
+                          Defaults to retrieving messages from partition 1.
 
     Messages are returned in order of newest to oldest.
 
@@ -174,31 +174,26 @@ def get_messages(request):
             'status': 'ok',
             'messages': [
                 {
-                    'key': '3a6592301e0911e190b1002500f0fa7c',
+                    'message_id': '3a6592301e0911e190b1002500f0fa7c',
                     'timestamp': 1323973966282.637,
-                    'body': 'jlaijwiel2432532jilj'
+                    'body': 'jlaijwiel2432532jilj',
+                    'partition': 1
                 },
                 {
-                    'key': '3a8553d71e0911e19262002500f0fa7c',
+                    'message_id': '3a8553d71e0911e19262002500f0fa7c',
                     'timestamp': 1323973966918.241,
-                    'body': 'ion12oibasdfjioawneilnf'
+                    'body': 'ion12oibasdfjioawneilnf',
+                    'partition': 2
                 }
             ]
         }
 
     """
-    queue_name = request.matchdict['queue_name']
-    storage = request.registry['backend_storage']
-    messages = storage.retrieve(
-        '%s-%s' % (queue_name, request.validated['partition']),
-        request.validated['limit'],
-        request.validated['since_timestamp'],
-        request.validated['order'])
-    message_data = [{
-        'key': key.hex,
-        'timestamp': timestamp,
-        'body': body} for key, timestamp, body in messages]
-    return {'status': 'ok', 'messages': message_data}
+    params = validators.GetMessages().deserialize(request.GET)
+    return {
+        'status': 'ok',
+        'messages': context.get_messages(**params)
+    }
 
 
 @view_config(context=Queue, name='info', request_method='GET', renderer='json',
