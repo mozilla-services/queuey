@@ -68,6 +68,8 @@ class Queue(object):
         self.storage = request.registry['backend_storage']
         self.queue_name = queue_name
         self.permissions = []
+        permissions = queue_data.pop('permissions', '')
+
         for name, value in queue_data.items():
             setattr(self, name, value)
 
@@ -81,8 +83,12 @@ class Queue(object):
 
         # If there's additional permissions, view/info/delete messages will
         # be granted to them
-        if 'permissions' in queue_data:
-            for permission in queue_data['permissions'].split(','):
+        if permissions:
+            if ',' in permissions:
+                permissions = permissions.split(',')
+            else:
+                permissions = [permissions]
+            for permission in permissions:
                 self.permissions.append(permission)
                 acl.extend([
                     (Allow, permission, 'view'),
@@ -100,15 +106,28 @@ class Queue(object):
 
     def push_batch(self, messages):
         """Push a batch of messages to the storage"""
-        msgs = [(self.queue_name + ':' + str(x['partition']), x['body'],
+        msgs = [('%s:%s' % (self.queue_name, x['partition']), x['body'],
                  x['ttl'], {}) for x in messages]
         results = self.storage.push_batch(self.consistency, self.application,
                                           msgs)
         rl = []
         for i, msg in enumerate(results):
             rl.append({'key': msg[0], 'timestamp': msg[1],
-                       'partition': int(msgs[i][:-1])})
+                       'partition': messages[i]['partition']})
         return rl
+
+    def get_messages(self, since=None, limit=None, order=None, partitions=None):
+        queue_names = []
+        for part in partitions:
+            queue_names.append('%s:%s' % (self.queue_name, part))
+        results = self.storage.retrieve_batch(
+            self.consistency, self.application, queue_names, start_at=since,
+            limit=limit, order=order)
+        for res in results:
+            del res['metadata']
+            res['partition'] = int(res['queue_name'].split(':')[-1])
+            del res['queue_name']
+        return results
 
     @property
     def count(self):
