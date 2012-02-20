@@ -11,9 +11,6 @@ class InvalidBrowserID(Exception):
 
 
 class QueueyAuthenticationPolicy(object):
-    def authenticated_userid(self, request):
-        return None
-
     def effective_principals(self, request):
         effective_principals = [Everyone]
         auth_header = request.headers.get('Authorization', [])
