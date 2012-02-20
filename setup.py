@@ -24,6 +24,11 @@ if not on_rtd:
         'thrift',
         'pycassa',
     ])
+else:
+    # Ensure if we *are* on RTD, we include the plugin we need
+    reqs.extend([
+        'sphinx_http_domain'
+    ])
 
 setup(
     name='queuey',
