@@ -3,6 +3,7 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 import os
 import unittest
+import urllib
 import json
 
 from paste.deploy import loadapp
@@ -127,6 +128,61 @@ class TestQueueyApp(unittest.TestCase):
         msg = result['messages'][0]
         eq_('Hello msg 2', msg['body'])
 
+    def test_delete_queue(self):
+        app = self.makeOne()
+        resp = app.post('/queuey', {'partitions': 3}, headers=auth_header)
+        result = json.loads(resp.body)
+        queue_name = str(result['queue_name'])
+
+        resp = app.get('/queuey/%s/info' % queue_name, headers=auth_header)
+        result = json.loads(resp.body)
+        eq_('user', result['type'])
+
+        resp = app.delete('/queuey/%s?delete_registration=true' % queue_name,
+                          headers=auth_header)
+        result = json.loads(resp.body)
+        eq_('ok', result['status'])
+
+        resp = app.get('/queuey/%s/info' % queue_name, headers=auth_header,
+                       status=404)
+        result = json.loads(resp.body)
+        eq_('error', result['status'])
+
+    def test_delete_queue_messages(self):
+        app = self.makeOne()
+        resp = app.post('/queuey', {'partitions': 3}, headers=auth_header)
+        result = json.loads(resp.body)
+        queue_name = str(result['queue_name'])
+
+        # Post a few messages
+        resp = app.post('/queuey/' + queue_name,
+                {'body': 'Hello there!', 'partition': 2}, headers=auth_header)
+        resp2 = app.post('/queuey/' + queue_name,
+                {'body': 'Hello there!', 'partition': 2}, headers=auth_header)
+        msg = json.loads(resp2.body)['messages'][0]
+        msg2 = json.loads(resp.body)['messages'][0]
+        resp = app.post('/queuey/' + queue_name,
+                {'body': 'Hello there!', 'partition': 1}, headers=auth_header)
+        resp = app.post('/queuey/' + queue_name,
+                {'body': 'Hello there!', 'partition': 3}, headers=auth_header)
+
+        # Fetch the messages
+        resp = app.get('/queuey/' + queue_name, {'partitions': '1,2,3'},
+                       headers=auth_header)
+        result = json.loads(resp.body)
+        eq_(4, len(result['messages']))
+
+        # Delete 2 messages
+        q = urllib.urlencode(
+            {'messages': msg['key'] + ',' + msg2['key'],
+             'partitions': '2'})
+        resp = app.delete('/queuey/%s?%s' % (queue_name, q), headers=auth_header)
+
+        resp = app.get('/queuey/' + queue_name, {'partitions': '1,2,3'},
+                       headers=auth_header)
+        result = json.loads(resp.body)
+        eq_(2, len(result['messages']))
+
     def test_invalid_inputs(self):
         app = self.makeOne()
         resp = app.post('/queuey', {'partitions': 3}, headers=auth_header)
@@ -158,6 +214,12 @@ class TestQueueyApp(unittest.TestCase):
             {'.body': 'Hello there!'}, headers=auth_header, status=404)
         eq_(404, resp.status_int)
 
+        # Test invalid partition type
+        resp = app.get('/queuey/' + queue_name, {'partitions': '1,fred'},
+                       headers=auth_header, status=400)
+        result = json.loads(resp.body)
+        eq_('error', result['status'])
+
         # Test bad principle name
         resp = app.post('/queuey', {'principles': 'app:queuey,apple:oranges'},
                         headers=auth_header, status=400)
@@ -165,6 +227,24 @@ class TestQueueyApp(unittest.TestCase):
         resp = app.post('/queuey', {'principles': 'apple:oranges'},
                         headers=auth_header, status=400)
         eq_(400, resp.status_int)
+
+        # Test bad hex
+        q = urllib.urlencode(
+            {'messages': 'asdfasdfasdfadsfasdf',
+             'partitions': '2'})
+        resp = app.delete('/queuey/%s?%s' % (queue_name, q), headers=auth_header,
+                          status=400)
+        result = json.loads(resp.body)
+        eq_('error', result['status'])
+
+        # Test 2 bad args
+        q = urllib.urlencode(
+            {'messages': '227208545c1611e19f857cc3a171be4b',
+             'partitions': '1,2'})
+        resp = app.delete('/queuey/%s?%s' % (queue_name, q), headers=auth_header,
+                          status=400)
+        result = json.loads(resp.body)
+        eq_('error', result['status'])
 
     def test_bad_appkey(self):
         app = self.makeOne()

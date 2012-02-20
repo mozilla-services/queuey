@@ -67,8 +67,8 @@ class Queue(object):
         self.metadata = request.registry['backend_metadata']
         self.storage = request.registry['backend_storage']
         self.queue_name = queue_name
-        self.principles = []
-        principles = queue_data.pop('principles', '')
+        principles = queue_data.pop('principles', '').split(',')
+        self.principles = [x.strip() for x in principles if x]
 
         for name, value in queue_data.items():
             setattr(self, name, value)
@@ -78,18 +78,14 @@ class Queue(object):
         app_id = 'app:%s' % self.application
         self.__acl__ = acl = [
             (Allow, app_id, 'create'),
-            (Allow, app_id, 'info')
+            (Allow, app_id, 'info'),
+            (Allow, app_id, 'delete')
         ]
 
         # If there's additional principles, view/info/delete messages will
         # be granted to them
-        if principles:
-            if ',' in principles:
-                principles = principles.split(',')
-            else:
-                principles = [principles]
-            for principle in principles:
-                self.principles.append(principle)
+        if self.principles:
+            for principle in self.principles:
                 for permission in ['view', 'info', 'delete']:
                     acl.append((Allow, principle, permission))
         else:
@@ -125,6 +121,23 @@ class Queue(object):
             res['partition'] = int(res['queue_name'].split(':')[-1])
             del res['queue_name']
         return results
+
+    def delete_messages(self, messages, partitions=None):
+        partition = partitions[0] if partitions else 1
+        qn = '%s:%s' % (self.queue_name, partition)
+        return self.storage.delete(self.consistency, self.application, qn,
+                                   *messages)
+
+    def delete(self, delete_registration=False, partitions=None):
+        partitions = partitions or [1]
+        if delete_registration:
+            partitions = range(1, self.partitions + 1)
+        for partition in partitions:
+            self.storage.truncate(self.consistency, self.application, '%s:%s' %
+                                  (self.queue_name, partition))
+        if delete_registration:
+            self.metadata.remove_queue(self.application, self.queue_name)
+        return True
 
     @property
     def count(self):

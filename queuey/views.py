@@ -11,11 +11,17 @@ from queuey.resources import Application
 from queuey.resources import Queue
 
 
+class InvalidParameter(Exception):
+    """Raised in views to flag a bad parameter"""
+
+
 def _fixup_dict(dct):
+    """Colander has an issue with unflatten that requires a leading ."""
     return dict(('.' + k, v) for k, v in dct.items())
 
 
 # Our invalid schema catch-all
+@view_config(context=InvalidParameter, renderer='json')
 @view_config(context='colander.Invalid', renderer='json')
 @view_config(context='queuey.security.InvalidBrowserID', renderer='json')
 @view_config(context='queuey.security.InvalidApplicationKey', renderer='json')
@@ -26,6 +32,9 @@ def bad_params(context, request):
     if cls_name == 'Invalid':
         request.response.status = 400
         errors = exc.asdict()
+    elif cls_name == 'InvalidParameter':
+        request.response.status = 400
+        errors = {cls_name: exc.message}
     elif cls_name == 'InvalidQueueName':
         request.response.status = 404
         errors = {cls_name: exc.message}
@@ -41,39 +50,10 @@ def bad_params(context, request):
 @view_config(context=Application, request_method='POST', renderer='json',
              permission='create_queue')
 def create_queue(context, request):
-    """Create a new queue
-
-    POST params
-
-        queue_name  - (`Optional`) Name of the queue to create
-        partitions  - (`Optional`) How many partitions the queue should
-                      have (defaults to 1)
-        type        - (`Optional`) Type of queue to create, defaults to
-                      'private' which requires authentication to access
-        consistency - (`Optional`) Level of consistency for the queue,
-                      defaults to 'strong'.
-        principles  - (`Optional`) List of App or Browser ID's separated
-                      with a comma if there's more than one
-
-    Returns a JSON response indicating the status, the UUID4 hex
-    string of the queue name (if not supplied), and the partitions
-    created.
-
-    Example success response::
-
-        {
-            'status': 'ok',
-            'application_name': 'notifications',
-            'queue_name': 'ea2f39c0de9a4b9db6463123641631de',
-            'partitions': 1,
-            'type': 'user',
-            'consistency': 'strong'
-        }
-
-    """
     schema = validators.NewQueue().bind()
     params = schema.deserialize(request.POST)
     context.register_queue(**params)
+    request.response.status = 201
     return dict(status='ok', application_name=context.application_name,
                 **params)
 
@@ -91,51 +71,12 @@ def queue_list(context, request):
 @view_config(context=Queue, request_method='POST', renderer='json',
              permission='create')
 def new_message(context, request):
-    """Post a message to a queue
-
-    POST params
-
-        A form body containing a single message and optional partition
-        value, or a set of message and partition pairs by number.
-
-        Example single message (shown as dict)::
-
-            {
-                'body': 'this is a message',
-                'partition': '1'
-            }
-
-        Example multiple message (shown as dict)::
-
-            {
-                'message.0.body': 'this is message 1',
-                'message.0.ttl': '3600',
-                'message.1.body': 'this is message 2',
-                'message.1.partition': '3'
-            }
-
-        The second example lets the first message go to the default
-        partition (1), while the second message is sent to partition
-        3.
-
-    Example success response::
-
-        {
-            'status': 'ok',
-            'messages' [
-                {
-                    'key': '3a6592301e0911e190b1002500f0fa7c',
-                    'timestamp': 1323976306.988889,
-                    'partition': 1
-                },
-            ]
-        }
-
-    """
+    request.response.status = 201
     if 'body' in request.POST:
         # Single message, use appropriate schema
         msgs = [validators.Message().deserialize(request.POST)]
     else:
+        # Multiple messages, fixup the dict for colander first
         msgs = _fixup_dict(request.POST)
         schema = validators.Messages()
         try:
@@ -158,42 +99,6 @@ def new_message(context, request):
 @view_config(context=Queue, request_method='GET', renderer='json',
              permission='view')
 def get_messages(context, request):
-    """Get messages from a queue
-
-    Query Params
-
-        since           - (`Optional`) All messages newer than this timestamp,
-                          should be formatted as seconds since epoch in GMT
-        limit           - (`Optional`) Only return N amount of messages
-        order           - (`Optional`) Order of messages, can be set to either
-                          `ascending` or `descending`. Defaults to `descending`.
-        partitions       - (`Optional`) A specific partition number to retrieve
-                          messages from or a comma separated list of partitions.
-                          Defaults to retrieving messages from partition 1.
-
-    Messages are returned in order of newest to oldest.
-
-    Example response::
-
-        {
-            'status': 'ok',
-            'messages': [
-                {
-                    'message_id': '3a6592301e0911e190b1002500f0fa7c',
-                    'timestamp': 1323973966282.637,
-                    'body': 'jlaijwiel2432532jilj',
-                    'partition': 1
-                },
-                {
-                    'message_id': '3a8553d71e0911e19262002500f0fa7c',
-                    'timestamp': 1323973966918.241,
-                    'body': 'ion12oibasdfjioawneilnf',
-                    'partition': 2
-                }
-            ]
-        }
-
-    """
     params = validators.GetMessages().deserialize(request.GET)
     return {
         'status': 'ok',
@@ -204,24 +109,6 @@ def get_messages(context, request):
 @view_config(context=Queue, name='info', request_method='GET', renderer='json',
              permission='info')
 def queue_info(context, request):
-    """Get queue information
-
-    Returns a JSON response indicating the status, and the information
-    about the queue.
-
-    Example response::
-
-        {
-            'status': 'ok',
-            'application_name': 'notifications',
-            'queue_name': 'ea2f39c0de9a4b9db6463123641631de',
-            'partitions': 1,
-            'created': 1322521547,
-            'type': 'user',
-            'count': 932
-        }
-
-    """
     return dict(
         status='ok',
         application_name=context.application,
@@ -237,43 +124,14 @@ def queue_info(context, request):
 @view_config(context=Queue, request_method='DELETE', renderer='json',
              permission='delete')
 def delete_queue(context, request):
-    """Delete a queues messages (and optionally the entire queue)
-
-    Body Params
-
-        messages              - (`Optional`) A comma separated list of message
-                                keys to delete. If set, this implies that the
-                                registration will not be deleted.
-        delete_registration   - (`Optional`) Set to true to delete the queue
-                                registration as well as the messages. Defaults
-                                to false.
-        partitions            - (`Optional`) If `delete_registration` is set to
-                                false, individual partitions may be emptied.
-                                Defaults to deleting messages in *all*
-                                partitions.
-
-    Example success response::
-
-        {'status': 'ok'}
-
-    If individual messages are being deleted, the partition will default
-    to partition 1 if no ``X-Partition`` header is supplied.
-
-    """
-    queue_name = request.matchdict['queue_name']
-    storage = request.registry['backend_storage']
-    meta = request.registry['backend_metadata']
-    if 'messages' in request.validated:
-        partition = request.validated.get('partition', 1)
-        storage.delete('%s-%s' % (queue_name, partition),
-                       *request.validated['messages'])
+    params = validators.DeleteMessages().deserialize(request.GET)
+    if params['messages'] and len(params['partitions']) > 1:
+        raise InvalidParameter("Partitions can only be a single value if "
+                               "messages are provided.")
+    if params['messages']:
+        del params['delete_registration']
+        context.delete_messages(**params)
     else:
-        info = meta.queue_information(request.app_key, queue_name)
-        partitions = info['partitions']
-
-        for num in range(1, partitions + 1):
-            storage.truncate('%s-%s' % (queue_name, num))
-
-    if request.validated.get('delete') != 'false':
-        meta.remove_queue(request.app_key, queue_name)
+        del params['messages']
+        context.delete(**params)
     return {'status': 'ok'}

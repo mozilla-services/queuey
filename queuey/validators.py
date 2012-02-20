@@ -22,39 +22,34 @@ _queuename_node = colander.SchemaNode(
     colander.String(), missing=default_queuename)
 
 
+class CommaList(object):
+    def deserialize(self, node, cstruct):
+        if cstruct is colander.null:
+            return colander.null
+        return [x.strip() for x in cstruct.split(',') if x]
+
+
 def principle_validator(node, value):
-    if ',' in value:
-        results = [x.strip() for x in value.split(',')]
-        valid_ids = filter(lambda x: bid_match.match(x), results)
-        if len(results) != len(valid_ids):
-            raise colander.Invalid(node, '%r is not a valid permission list.' %
-                                   value)
-    else:
-        value = value.strip()
+    for value in [x.strip() for x in value.split(',') if x]:
         if not bid_match.match(value):
-            print value
             raise colander.Invalid(node, '%r is not a valid permission list.' %
                                    value)
 
 
 def comma_int_list(node, value):
-    if value is colander.null:
-        return
     msg = ('%r is not a valid comma separated list of integers or a single '
            'integer.' % value)
-    if ',' in value:
-        values = []
-        for val in value.split(','):
-            val = val.strip()
-            if not re.match(r'^\d+$', val):
-                raise colander.Invalid(node, msg)
-            values.append(int(val))
-        return values
-    else:
-        value = value.strip()
-        if not re.match(r'^\d+$', value):
+    for val in value:
+        if not re.match(r'^\d+$', val):
             raise colander.Invalid(node, msg)
-        return [int(value)]
+
+
+def valid_hexs(node, value):
+    msg = ('%r is not a valid comma separated list of message ids or a single '
+           'message id.' % value)
+    for val in value:
+        if not re.match(r'[a-zA-Z0-9]{32}', val):
+            raise colander.Invalid(node, msg)
 
 
 class GetMessages(colander.MappingSchema):
@@ -64,8 +59,16 @@ class GetMessages(colander.MappingSchema):
     order = colander.SchemaNode(colander.String(), missing="descending",
                                 validator=colander.OneOf(['descending',
                                                           'ascending']))
-    partitions = colander.SchemaNode(colander.String(), missing=[1],
+    partitions = colander.SchemaNode(CommaList(), missing=[1],
                                     validator=comma_int_list)
+
+
+class DeleteMessages(colander.MappingSchema):
+    messages = colander.SchemaNode(CommaList(), missing=None,
+                                   validator=valid_hexs)
+    delete_registration = colander.SchemaNode(colander.Bool(), missing=False)
+    partitions = colander.SchemaNode(CommaList(), missing=[],
+                                     validator=comma_int_list)
 
 
 class NewQueue(colander.MappingSchema):
