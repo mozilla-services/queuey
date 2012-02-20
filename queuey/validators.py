@@ -22,10 +22,7 @@ _queuename_node = colander.SchemaNode(
     colander.String(), missing=default_queuename)
 
 
-def permission_validator(node, value):
-    if value is colander.null:
-        return
-
+def principle_validator(node, value):
     if ',' in value:
         results = [x.strip() for x in value.split(',')]
         valid_ids = filter(lambda x: bid_match.match(x), results)
@@ -79,8 +76,8 @@ class NewQueue(colander.MappingSchema):
     consistency = colander.SchemaNode(
         colander.String(), missing='strong', validator=colander.OneOf(
             ['weak', 'strong', 'very_strong']))
-    permissions = colander.SchemaNode(colander.String(), missing=None,
-                                      validator=permission_validator)
+    principles = colander.SchemaNode(colander.String(), missing=None,
+                                      validator=principle_validator)
 
 
 class QueueList(colander.MappingSchema):

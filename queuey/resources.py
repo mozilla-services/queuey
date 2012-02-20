@@ -47,8 +47,8 @@ class Application(object):
 
     def register_queue(self, queue_name, **metadata):
         """Register a queue for this application"""
-        if not metadata.get('permissions'):
-            del metadata['permissions']
+        if not metadata.get('principles'):
+            del metadata['principles']
         return self.metadata.register_queue(
             self.application_name,
             queue_name,
@@ -67,8 +67,8 @@ class Queue(object):
         self.metadata = request.registry['backend_metadata']
         self.storage = request.registry['backend_storage']
         self.queue_name = queue_name
-        self.permissions = []
-        permissions = queue_data.pop('permissions', '')
+        self.principles = []
+        principles = queue_data.pop('principles', '')
 
         for name, value in queue_data.items():
             setattr(self, name, value)
@@ -81,22 +81,19 @@ class Queue(object):
             (Allow, app_id, 'info')
         ]
 
-        # If there's additional permissions, view/info/delete messages will
+        # If there's additional principles, view/info/delete messages will
         # be granted to them
-        if permissions:
-            if ',' in permissions:
-                permissions = permissions.split(',')
+        if principles:
+            if ',' in principles:
+                principles = principles.split(',')
             else:
-                permissions = [permissions]
-            for permission in permissions:
-                self.permissions.append(permission)
-                acl.extend([
-                    (Allow, permission, 'view'),
-                    (Allow, permission, 'info'),
-                    (Allow, permission, 'delete')
-                ])
+                principles = [principles]
+            for principle in principles:
+                self.principles.append(principle)
+                for permission in ['view', 'info', 'delete']:
+                    acl.append((Allow, principle, permission))
         else:
-            # If there are no additional permissions, the application
+            # If there are no additional principles, the application
             # may also view messages in the queue
             acl.append((Allow, app_id, 'view'))
 

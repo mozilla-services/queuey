@@ -285,7 +285,7 @@ class MetadataBackend(Interface):
                 'application': 'your app name',
                 'type': 'user',
                 'consistency': 'strong',
-                'permissions': 'bid:fred@browserid.org,bid:george@home.com'
+                'principles': 'bid:fred@browserid.org,bid:george@home.com'
             }
 
         """
