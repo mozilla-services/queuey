@@ -24,9 +24,14 @@ def bad_params(context, request):
     exc = request.exception
     cls_name = exc.__class__.__name__
     if cls_name == 'Invalid':
+        request.response.status = 400
         errors = exc.asdict()
+    elif cls_name == 'InvalidQueueName':
+        request.response.status = 404
+        errors = {cls_name: exc.message}
     else:
         errors = {cls_name: exc.message}
+        request.response.status = 401
     return {
         'status': 'error',
         'error_msg': errors
@@ -40,15 +45,15 @@ def create_queue(context, request):
 
     POST params
 
-        queue_name - (`Optional`) Name of the queue to create
-        partitions - (`Optional`) How many partitions the queue should
-                     have (defaults to 1)
-        type       - (`Optional`) Type of queue to create, defaults to
-                     'private' which requires authentication to access
+        queue_name  - (`Optional`) Name of the queue to create
+        partitions  - (`Optional`) How many partitions the queue should
+                      have (defaults to 1)
+        type        - (`Optional`) Type of queue to create, defaults to
+                      'private' which requires authentication to access
         consistency - (`Optional`) Level of consistency for the queue,
                       defaults to 'strong'.
-        permissions - (`Optional`) List of BrowserID's separated with a
-                      comma if there's more than one
+        principles  - (`Optional`) List of App or Browser ID's separated
+                      with a comma if there's more than one
 
     Returns a JSON response indicating the status, the UUID4 hex
     string of the queue name (if not supplied), and the partitions
@@ -135,7 +140,7 @@ def new_message(context, request):
         schema = validators.Messages()
         try:
             msgs = schema.unflatten(msgs)
-        except AssertionError:
+        except Exception:
             msgs = {}
         msgs = schema.deserialize(msgs)['message']
 
@@ -212,6 +217,7 @@ def queue_info(context, request):
             'queue_name': 'ea2f39c0de9a4b9db6463123641631de',
             'partitions': 1,
             'created': 1322521547,
+            'type': 'user',
             'count': 932
         }
 
@@ -223,25 +229,28 @@ def queue_info(context, request):
         partitions=context.partitions,
         created=context.created,
         count=context.count,
-        permissions=context.permissions
+        principles=context.principles,
+        type=context.type
     )
 
 
-def delete_queue(request):
-    """Delete a queue
+@view_config(context=Queue, request_method='DELETE', renderer='json',
+             permission='delete')
+def delete_queue(context, request):
+    """Delete a queues messages (and optionally the entire queue)
 
-    URL Params
+    Body Params
 
-        queue_name - A UUID4 hex string to use as the queue name.
-
-    JSON Body Params (`Optional`)
-
-        messages - A list of message keys to delete
-
-    Query Params
-
-        delete - (`Optional`) If set to false, the queue will be deleted
-                 but remain registered
+        messages              - (`Optional`) A comma separated list of message
+                                keys to delete. If set, this implies that the
+                                registration will not be deleted.
+        delete_registration   - (`Optional`) Set to true to delete the queue
+                                registration as well as the messages. Defaults
+                                to false.
+        partitions            - (`Optional`) If `delete_registration` is set to
+                                false, individual partitions may be emptied.
+                                Defaults to deleting messages in *all*
+                                partitions.
 
     Example success response::
 

@@ -14,24 +14,27 @@ auth_header = {'Authorization': 'Application f25bfb8fe200475c8a0532a9cbe7651e'}
 
 class TestQueueyApp(unittest.TestCase):
     def makeOne(self):
-        ini_file = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), 'test.ini'))
-        application = loadapp('config:%s' % ini_file)
-        return application
+        try:
+            return self.application
+        except AttributeError:
+            ini_file = os.path.abspath(
+                os.path.join(os.path.dirname(__file__), 'test.ini'))
+            self.application = application = TestApp(loadapp('config:%s' % ini_file))
+            return application
 
     def test_app(self):
-        app = TestApp(self.makeOne())
+        app = self.makeOne()
         resp = app.post('/queuey', status=403)
         assert "Access was denied" in resp.body
 
     def test_queue_list(self):
-        app = TestApp(self.makeOne())
+        app = self.makeOne()
         resp = app.get('/queuey', headers=auth_header)
         result = json.loads(resp.body)
         eq_('ok', result['status'])
 
     def test_make_queue_post_get_messages(self):
-        app = TestApp(self.makeOne())
+        app = self.makeOne()
         resp = app.post('/queuey', headers=auth_header)
         result = json.loads(resp.body)
         queue_name = str(result['queue_name'])
@@ -49,9 +52,9 @@ class TestQueueyApp(unittest.TestCase):
         eq_('Hello there!', msg['body'])
         eq_(1, msg['partition'])
 
-    def test_queue_permissions(self):
-        app = TestApp(self.makeOne())
-        resp = app.post('/queuey', {'permissions': 'app:queuey'},
+    def test_queue_principles(self):
+        app = self.makeOne()
+        resp = app.post('/queuey', {'principles': 'app:queuey'},
                         headers=auth_header)
         result = json.loads(resp.body)
         queue_name = str(result['queue_name'])
@@ -60,23 +63,119 @@ class TestQueueyApp(unittest.TestCase):
         resp = app.get('/queuey/%s/info' % queue_name, headers=auth_header)
         result = json.loads(resp.body)
         eq_(0, result['count'])
-        assert 'app:queuey' in result['permissions']
+        assert 'app:queuey' in result['principles']
+
+        # Test multiplate queue principles
+        resp = app.post('/queuey', {'principles': 'app:queuey,app:george'},
+                headers=auth_header)
+        result = json.loads(resp.body)
+        queue_name = str(result['queue_name'])
+
+        # Get the queue info
+        resp = app.get('/queuey/%s/info' % queue_name, headers=auth_header)
+        result = json.loads(resp.body)
+        eq_(0, result['count'])
+        assert 'app:queuey' in result['principles']
+        assert 'app:george' in result['principles']
+
+    def test_public_queue(self):
+        app = self.makeOne()
+        resp = app.post('/queuey', {'type': 'public'},
+                        headers=auth_header)
+        result = json.loads(resp.body)
+        queue_name = str(result['queue_name'])
+
+        # Get the queue info
+        resp = app.get('/queuey/%s/info' % queue_name, headers=auth_header)
+        result = json.loads(resp.body)
+        eq_('public', result['type'])
 
     def test_make_queue_post_get_batches(self):
-        app = TestApp(self.makeOne())
-        resp = app.post('/queuey', headers=auth_header)
+        app = self.makeOne()
+        resp = app.post('/queuey', {'partitions': 3}, headers=auth_header)
         result = json.loads(resp.body)
         queue_name = str(result['queue_name'])
 
         # Post several messages
-        resp = app.post('/queuey/' + queue_name,
-                        {'body': 'Hello there!'}, headers=auth_header)
+        msgs = {
+            'message.0.body': 'Hello msg 1',
+            'message.0.partition': '2',
+            'message.1.body': 'Hello msg 2',
+            'message.1.partition': '2',
+            'message.2.body': 'Hello msg 3',
+            'message.2.ttl': '3600',
+            'message.2.partition': '1'
+        }
+        resp = app.post('/queuey/' + queue_name, msgs, headers=auth_header)
         result = json.loads(resp.body)
 
         # Fetch the messages
-        resp = app.get('/queuey/' + queue_name, headers=auth_header)
+        resp = app.get('/queuey/' + queue_name, {'partitions': '1,2,3'},
+                       headers=auth_header)
         result = json.loads(resp.body)
-        eq_(1, len(result['messages']))
+        eq_(3, len(result['messages']))
         msg = result['messages'][0]
-        eq_('Hello there!', msg['body'])
+        eq_('Hello msg 3', msg['body'])
         eq_(1, msg['partition'])
+        eq_(2, result['messages'][1]['partition'])
+
+        # From a single partition
+        resp = app.get('/queuey/' + queue_name, {'partitions': '2'},
+               headers=auth_header)
+        result = json.loads(resp.body)
+        eq_(2, len(result['messages']))
+        msg = result['messages'][0]
+        eq_('Hello msg 2', msg['body'])
+
+    def test_invalid_inputs(self):
+        app = self.makeOne()
+        resp = app.post('/queuey', {'partitions': 3}, headers=auth_header)
+        result = json.loads(resp.body)
+        queue_name = str(result['queue_name'])
+
+        # Test a bad message
+        resp = app.post('/queuey/' + queue_name,
+                {'body': 'Hello there!', 'ttl': 'fred'}, headers=auth_header,
+                status=400)
+        result = json.loads(resp.body)
+
+        eq_('error', result['status'])
+        eq_('"fred" is not a number', result['error_msg']['ttl'])
+
+        # Test a bad unflatten
+        resp = app.post('/queuey/' + queue_name,
+            {'.body': 'Hello there!'}, headers=auth_header, status=400)
+        result = json.loads(resp.body)
+        eq_('error', result['status'])
+
+        # Test no queue name
+        resp = app.post('/queuey/' + queue_name + 'blip',
+            {'.body': 'Hello there!'}, headers=auth_header, status=404)
+        eq_(404, resp.status_int)
+
+        # Test queue name too long
+        resp = app.post('/queuey/' + 'blip' * 30,
+            {'.body': 'Hello there!'}, headers=auth_header, status=404)
+        eq_(404, resp.status_int)
+
+        # Test bad principle name
+        resp = app.post('/queuey', {'principles': 'app:queuey,apple:oranges'},
+                        headers=auth_header, status=400)
+        eq_(400, resp.status_int)
+        resp = app.post('/queuey', {'principles': 'apple:oranges'},
+                        headers=auth_header, status=400)
+        eq_(400, resp.status_int)
+
+    def test_bad_appkey(self):
+        app = self.makeOne()
+        resp = app.post('/queuey', headers={'Authorization': 'Application OOPS'},
+                        status=401)
+        result = json.loads(resp.body)
+
+        eq_('error', result['status'])
+        eq_('InvalidApplicationKey', result['error_msg'].keys()[0])
+
+    def test_no_path(self):
+        app = self.makeOne()
+        resp = app.post('/blah', status=404)
+        eq_(404, resp.status_int)
