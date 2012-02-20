@@ -42,10 +42,12 @@ rejected.
 
     :arg application: Application name
     :optparam queue_name: Name of the queue to create
-    :optparam integer partitions: How many partitions the queue should have (defaults to 1)
+    :optparam integer partitions: How many partitions the queue should have.
+                                  Defaults to 1.
     :optparam type: Type of queue to create, defaults to ``user`` which
                     requires authentication to access messages.
-    :optparam consistency: Level of consistency for the queue, defaults to ``strong``.
+    :optparam consistency: Level of consistency for the queue, defaults to
+                           ``strong``.
     :optparam principles: List of App or Browser ID's separated
                   with a comma if there's more than one
 
@@ -163,7 +165,9 @@ creates unless a set of principles was registered for the queue.
                                    as well as the messages. Defaults to false.
     :optparam partitions: If `delete_registration` is set to false, individual
                           partitions may be emptied. If messages are supplied,
-                          only the partition they are from may be specified.
+                          only the partition they are from may be specified. If
+                          delete_registration is True, partitions will be
+                          ignored and all partitions will be removed.
 
     Delete a queues messages (and optionally the entire queue). If individual
     messages are specified and are not in the default partition (1), the
