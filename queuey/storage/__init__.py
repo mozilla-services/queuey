@@ -21,10 +21,8 @@ def configure_from_settings(object_name, settings):
     config = {}
     prefix = object_name + '.'
     for name, value in settings.iteritems():
-        if name.startswith(prefix):
-            config[name[len(prefix):]] = value
-        else:
-            config[name] = value
+        name = config[name[len(prefix):]] if name.startswith(prefix) else name
+        config[name] = value
     klass = dotted_resolver.resolve(config.pop('backend'))
     return klass(**config)
 
