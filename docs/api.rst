@@ -66,6 +66,56 @@ rejected.
             'consistency': 'strong'
         }
 
+.. http:method:: PUT /{application}/{queue_name}
+
+    :arg application: Application name
+    :arg queue_name: Queue name to access
+
+    :optparam integer partitions: How many partitions the queue should have.
+    :optparam type: Type of queue to create, 'user' or 'public'.
+    :optparam consistency: Level of consistency for the queue.
+    :optparam principles: List of App or Browser ID's separated
+                          with a comma if there's more than one
+
+    Update queue parameters. Partitions may only be increased, not decreased.
+    Other settings overwrite existing parameters for the queue, to modify the
+    principles one should first fetch the existing ones, change them as
+    appropriate and PUT the new ones.
+
+    Example response::
+
+        {
+            'status': 'ok',
+            'application_name': 'notifications',
+            'queue_name': 'ea2f39c0de9a4b9db6463123641631de',
+            'partitions': 1,
+            'type': 'user',
+            'consistency': 'strong'
+        }
+
+.. http:method:: DELETE /{application}/{queue_name}
+
+    :arg application: Application name
+    :arg queue_name: Queue name to access
+    :optparam messages: A comma separated list of message keys to delete. If
+                        set, this implies that the registration will not be
+                        deleted.
+    :optparam delete_registration: Set to true to delete the queue registration
+                                   as well as the messages. Defaults to false.
+    :optparam partitions: If `delete_registration` is set to false, individual
+                          partitions may be emptied. If messages are supplied,
+                          only the partition they are from may be specified. If
+                          delete_registration is True, partitions will be
+                          ignored and all partitions will be removed.
+
+    Delete a queues messages (and optionally the entire queue). If individual
+    messages are specified and are not in the default partition (1), the
+    partition must be provided as the ``partitions`` parameter.
+
+    Example success response::
+
+        {'status': 'ok'}
+
 Queue Resources
 ===============
 
@@ -166,56 +216,6 @@ creates unless a set of principles was registered for the queue.
                 },
             ]
         }
-
-.. http:method:: PUT /{application}/{queue_name}
-
-    :arg application: Application name
-    :arg queue_name: Queue name to access
-
-    :optparam integer partitions: How many partitions the queue should have.
-    :optparam type: Type of queue to create, 'user' or 'public'.
-    :optparam consistency: Level of consistency for the queue.
-    :optparam principles: List of App or Browser ID's separated
-                          with a comma if there's more than one
-
-    Update queue parameters. Partitions may only be increased, not decreased.
-    Other settings overwrite existing parameters for the queue, to modify the
-    principles one should first fetch the existing ones, change them as
-    appropriate and PUT the new ones.
-
-    Example response::
-
-        {
-            'status': 'ok',
-            'application_name': 'notifications',
-            'queue_name': 'ea2f39c0de9a4b9db6463123641631de',
-            'partitions': 1,
-            'type': 'user',
-            'consistency': 'strong'
-        }
-
-.. http:method:: DELETE /{application}/{queue_name}
-
-    :arg application: Application name
-    :arg queue_name: Queue name to access
-    :optparam messages: A comma separated list of message keys to delete. If
-                        set, this implies that the registration will not be
-                        deleted.
-    :optparam delete_registration: Set to true to delete the queue registration
-                                   as well as the messages. Defaults to false.
-    :optparam partitions: If `delete_registration` is set to false, individual
-                          partitions may be emptied. If messages are supplied,
-                          only the partition they are from may be specified. If
-                          delete_registration is True, partitions will be
-                          ignored and all partitions will be removed.
-
-    Delete a queues messages (and optionally the entire queue). If individual
-    messages are specified and are not in the default partition (1), the
-    partition must be provided as the ``partitions`` parameter.
-
-    Example success response::
-
-        {'status': 'ok'}
 
 .. http:method:: GET /{application}/{queue_name}/info
 
