@@ -6,7 +6,9 @@ import uuid
 
 import colander
 
-bid_match = re.compile(r'^(bid:\w+@\w+\.\w+|app:\w+)$')
+BID_REGEX = re.compile(r'^(bid:\w+@\w+\.\w+|app:\w+)$')
+INT_REGEX = re.compile(r'^\d+$')
+HEX_REGEX = re.compile(r'[a-zA-Z0-9]{32}')
 
 
 @colander.deferred
@@ -31,7 +33,7 @@ class CommaList(object):
 
 def principle_validator(node, value):
     for value in [x.strip() for x in value.split(',') if x]:
-        if not bid_match.match(value):
+        if not BID_REGEX.match(value):
             raise colander.Invalid(node, '%r is not a valid permission list.' %
                                    value)
 
@@ -40,7 +42,7 @@ def comma_int_list(node, value):
     msg = ('%r is not a valid comma separated list of integers or a single '
            'integer.' % value)
     for val in value:
-        if not re.match(r'^\d+$', val):
+        if not INT_REGEX.match(val):
             raise colander.Invalid(node, msg)
 
 
@@ -48,7 +50,7 @@ def valid_hexs(node, value):
     msg = ('%r is not a valid comma separated list of message ids or a single '
            'message id.' % value)
     for val in value:
-        if not re.match(r'[a-zA-Z0-9]{32}', val):
+        if not HEX_REGEX.match(val):
             raise colander.Invalid(node, msg)
 
 
