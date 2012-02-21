@@ -7,6 +7,9 @@ from pyramid.security import Allow
 from pyramid.security import Everyone
 
 
+FLOAT_REGEX = re.compile(r'^\d+(\.\d+)?')
+
+
 class InvalidQueueName(Exception):
     """Raised when a queue name is invalid"""
 
@@ -115,7 +118,7 @@ class Queue(object):
         queue_names = []
         for part in partitions:
             queue_names.append('%s:%s' % (self.queue_name, part))
-        if since and re.match(r'^\d+(\.\d+)?', since):
+        if since and FLOAT_REGEX.match(since):
             since = float(since)
         results = self.storage.retrieve_batch(
             self.consistency, self.application, queue_names, start_at=since,
