@@ -21,24 +21,57 @@ methods must include an Authorization header with the application key::
 Calls missing a valid Authorization header or valid Application key will be
 rejected.
 
-.. http:method:: GET /{application}
+.. http:method:: GET /v1/{application}
 
     :arg application: Application name
     :optparam integer limit: Amount of queues to list.
     :optparam string offset: A queue name to start with for paginating through the
                              result
+    :optparam boolean details: Whether additional queue details such as the
+                               consistency, type, partitions, and principles
+                               for the queue should also be returned. Defaults
+                               to false.
+    :optparam boolean include_count: When including details, should the total
+                                     message count be included? Defaults to
+                                     false.
 
     Returns a list of queues for the application. No sorting or ordering for
-    this operation is available, and queues are not in any specific ordering.
+    this operation is available, queues are not in any specific ordering but
+    their order is consistent for proper pagination.
 
     Example response::
 
         {
             'status': 'ok',
-            'queues': ['a queue', 'another queue']
+            'queues': [
+                {'queue_name': 'a queue'},
+                {'queue_name': 'another queue'}
+            ]
         }
 
-.. http:method:: POST /{application}
+    Example response with details::
+
+        {
+            'status': 'ok',
+            'queues': [
+                {
+                    'queue_name': 'ea2f39c0de9a4b9db6463123641631de',
+                    'partitions': 1,
+                    'created': 1322521547,
+                    'type': 'user',
+                    'count': 932                
+                },
+                {
+                    'queue_name': 'another queue',
+                    'partitions': 4,
+                    'created': 1325243233,
+                    'type': 'user',
+                    'count': 232                
+                },
+            ]
+        }
+
+.. http:method:: POST /v1/{application}
 
     :arg application: Application name
     :optparam queue_name: Name of the queue to create
@@ -52,21 +85,23 @@ rejected.
                           with a comma if there's more than one
 
     Create a new queue for the application. Returns a JSON response indicating
-    the status, the UUID4 hex string of the queue name (if not supplied), and
-    the partitions created.
+    the status, the UUID4 hex string of the queue name (if a queue_name was not
+    supplied), and the partitions created.
+
+    Calling this method with no parameters at all will yield a response like
+    the one below.
 
     Example response::
 
         {
             'status': 'ok',
-            'application_name': 'notifications',
             'queue_name': 'ea2f39c0de9a4b9db6463123641631de',
             'partitions': 1,
             'type': 'user',
             'consistency': 'strong'
         }
 
-.. http:method:: PUT /{application}/{queue_name}
+.. http:method:: PUT /v1/{application}/{queue_name}
 
     :arg application: Application name
     :arg queue_name: Queue name to access
@@ -86,19 +121,18 @@ rejected.
 
         {
             'status': 'ok',
-            'application_name': 'notifications',
             'queue_name': 'ea2f39c0de9a4b9db6463123641631de',
             'partitions': 1,
             'type': 'user',
             'consistency': 'strong'
         }
 
-.. http:method:: DELETE /{application}/{queue_name}
+.. http:method:: DELETE /v1/{application}/{queue_name}
 
     :arg application: Application name
     :arg queue_name: Queue name to access
 
-    Delete a queue and all its messages.
+    Delete a queue and all its partitions and messages.
 
     Example success response::
 
@@ -114,7 +148,7 @@ an Application key to create messages, and viewing messages varies depending
 on queue principles. By default an Application may create/view messages it
 creates unless a set of principles was registered for the queue.
 
-.. http:method:: GET /{application}/{queue_name}
+.. http:method:: GET /v1/{application}/{queue_name}
 
     :arg application: Application name
     :arg queue_name: Queue name to access
@@ -151,12 +185,12 @@ creates unless a set of principles was registered for the queue.
             ]
         }
 
-.. http:method:: POST /{application}/{queue_name}
+.. http:method:: POST /v1/{application}/{queue_name}
 
     :arg application: Application name
     :arg queue_name: Queue name to access
 
-    A form body containing a single message and optional partition
+    A body containing a single message and optional partition
     value, or a set of message and partition pairs by number.
 
     When the partition is not specified, the message will be randomly
@@ -166,31 +200,28 @@ creates unless a set of principles was registered for the queue.
     A TTL can be specified per message, in seconds till it should expire
     and be unavailable.
 
-    Example single message POST with all optional params (shown as dict)::
+    **Posting a batch of messages (Using JSON)**
 
-        {
-            'body': 'this is a message',
-            'partition': '1',
-            'ttl': '3600'
-        }
+    Include a ``Content-Type`` HTTP header set to ``application/json`` with
+    a body like the following::
 
-    Example single message POST with minimum params::
+        {'messages': [
+            {
+                'body': 'this is message 1',
+                'ttl': 3600,
+            },
+            {
+                'body': 'this is message 2',
+                'partition': 3
+            }
+        ]}
 
-        {
-            'body': 'this is a message'
-        }
+    **Post an individual message**
 
-    Example multiple message POST (shown as dict)::
-
-        {
-            'message.0.body': 'this is message 1',
-            'message.0.ttl': '3600',
-            'message.1.body': 'this is message 2',
-            'message.1.partition': '3'
-        }
-
-    The second example lets the first message go to a random partition,
-    while the second message is sent specifically to partition 3.
+    Any ``Content-Type`` header will be recorded with the message. The body
+    is assumed to be the entirety of the POST body. The TTL or Partition can
+    be set by including the appropriate value with either ``X-TTL`` or 
+    ``X-Partition`` HTTP headers in the request.
 
     Example success response::
 
@@ -205,30 +236,7 @@ creates unless a set of principles was registered for the queue.
             ]
         }
 
-.. http:method:: GET /{application}/{queue_name}/info
-
-    :arg application: Application name
-    :arg queue_name: Queue name to access
-    :optparam include_count: Include the message count, use carefully as the
-                             counting could take awhile on larger and/or
-                             heavily partitioned queues.
-
-    Get queue information. Returns a response indicating the status, and the
-    information about the queue.
-
-    Example response::
-
-        {
-            'status': 'ok',
-            'application_name': 'notifications',
-            'queue_name': 'ea2f39c0de9a4b9db6463123641631de',
-            'partitions': 1,
-            'created': 1322521547,
-            'type': 'user',
-            'count': 932
-        }
-
-.. http:method:: DELETE /{application}/{queue_name}/{messages}
+.. http:method:: DELETE /v1/{application}/{queue_name}/{messages}
 
     :arg application: Application name
     :arg queue_name: Queue name to access
@@ -253,7 +261,7 @@ creates unless a set of principles was registered for the queue.
 Individual Messages
 ===================
 
-.. http:method:: GET /{application}/{queue_name}/{message_id}
+.. http:method:: GET /v1/{application}/{queue_name}/{message_id}
 
     :arg application: Application name
     :arg queue_name: Queue name to access
@@ -263,7 +271,7 @@ Individual Messages
     Content-Type recorded for it, the response will include it as an
     HTTP header.
 
-.. http:method:: PUT /{application}/{queue_name}/{message_id}
+.. http:method:: PUT /v1/{application}/{queue_name}/{message_id}
 
     :arg application: Application name
     :arg queue_name: Queue name to access
@@ -272,7 +280,7 @@ Individual Messages
     Update the message stored at this id. The body and metadata associated
     with the message may be changed.
 
-.. http:method:: DELETE /{application}/{queue_name}/{message_id}
+.. http:method:: DELETE /v1/{application}/{queue_name}/{message_id}
 
     :arg application: Application name
     :arg queue_name: Queue name to access
