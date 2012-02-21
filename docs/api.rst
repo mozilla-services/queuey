@@ -125,11 +125,21 @@ creates unless a set of principles was registered for the queue.
     assigned to one of the partitions for a queue (or just the first
     one if the queue has only one partition).
 
-    Example single message POST (shown as dict)::
+    A TTL can be specified per message, in seconds till it should expire
+    and be unavailable.
+
+    Example single message POST with all optional params (shown as dict)::
 
         {
             'body': 'this is a message',
-            'partition': '1'
+            'partition': '1',
+            'ttl': '3600'
+        }
+
+    Example single message POST with minimum params::
+
+        {
+            'body': 'this is a message'
         }
 
     Example multiple message POST (shown as dict)::
