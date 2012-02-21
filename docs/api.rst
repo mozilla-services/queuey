@@ -225,7 +225,7 @@ creates unless a set of principles was registered for the queue.
 
     Example POST as seen by server including both *optional* HTTP headers::
 
-        POST /notifications/ea2f39c0de9a4b9db6463123641631de HTTP/1.1
+        POST /v1/notifications/ea2f39c0de9a4b9db6463123641631de HTTP/1.1
         Host: site.running.queuey
         User-Agent: AwesomeClient
         Content-Length: 36
@@ -264,7 +264,7 @@ creates unless a set of principles was registered for the queue.
     Example of deleting a message from partition 2::
 
         # The %3 is a URL encoded colon
-        DELETE /my_application/somequeuename/2%38cc967e0cf1e45e3b0d4926c90057caf
+        DELETE /v1/my_application/somequeuename/2%38cc967e0cf1e45e3b0d4926c90057caf
 
     Example success response::
 
