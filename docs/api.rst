@@ -138,8 +138,8 @@ rejected.
 
         {'status': 'ok'}
 
-Multiple Messages
-=================
+Message Management
+==================
 
 Create messages on a queue, get messages, and delete messages. Access varies
 depending on the queue, queues with a type of ``public`` 
@@ -257,33 +257,3 @@ creates unless a set of principles was registered for the queue.
     Example success response::
 
         {'status': 'ok'}
-
-Individual Messages
-===================
-
-.. http:method:: GET /v1/{application}/{queue_name}/{message_id}
-
-    :arg application: Application name
-    :arg queue_name: Queue name to access
-    :arg message_id: A message ID to access
-
-    Returns an individual message from queuey. If the message has a
-    Content-Type recorded for it, the response will include it as an
-    HTTP header.
-
-.. http:method:: PUT /v1/{application}/{queue_name}/{message_id}
-
-    :arg application: Application name
-    :arg queue_name: Queue name to access
-    :arg message_id: A message ID to access
-
-    Update the message stored at this id. The body and metadata associated
-    with the message may be changed.
-
-.. http:method:: DELETE /v1/{application}/{queue_name}/{message_id}
-
-    :arg application: Application name
-    :arg queue_name: Queue name to access
-    :arg message_id: A message ID to access
-
-    Delete the message id at this URI.
