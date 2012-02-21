@@ -66,56 +66,6 @@ rejected.
             'consistency': 'strong'
         }
 
-.. http:method:: PUT /{application}/{queue_name}
-
-    :arg application: Application name
-    :arg queue_name: Queue name to access
-
-    :optparam integer partitions: How many partitions the queue should have.
-    :optparam type: Type of queue to create, 'user' or 'public'.
-    :optparam consistency: Level of consistency for the queue.
-    :optparam principles: List of App or Browser ID's separated
-                          with a comma if there's more than one
-
-    Update queue parameters. Partitions may only be increased, not decreased.
-    Other settings overwrite existing parameters for the queue, to modify the
-    principles one should first fetch the existing ones, change them as
-    appropriate and PUT the new ones.
-
-    Example response::
-
-        {
-            'status': 'ok',
-            'application_name': 'notifications',
-            'queue_name': 'ea2f39c0de9a4b9db6463123641631de',
-            'partitions': 1,
-            'type': 'user',
-            'consistency': 'strong'
-        }
-
-.. http:method:: DELETE /{application}/{queue_name}
-
-    :arg application: Application name
-    :arg queue_name: Queue name to access
-    :optparam messages: A comma separated list of message keys to delete. If
-                        set, this implies that the registration will not be
-                        deleted.
-    :optparam delete_registration: Set to true to delete the queue registration
-                                   as well as the messages. Defaults to false.
-    :optparam partitions: If `delete_registration` is set to false, individual
-                          partitions may be emptied. If messages are supplied,
-                          only the partition they are from may be specified. If
-                          delete_registration is True, partitions will be
-                          ignored and all partitions will be removed.
-
-    Delete a queues messages (and optionally the entire queue). If individual
-    messages are specified and are not in the default partition (1), the
-    partition must be provided as the ``partitions`` parameter.
-
-    Example success response::
-
-        {'status': 'ok'}
-
 Queue Resources
 ===============
 
@@ -217,10 +167,51 @@ creates unless a set of principles was registered for the queue.
             ]
         }
 
+.. http:method:: PUT /{application}/{queue_name}
+
+    :arg application: Application name
+    :arg queue_name: Queue name to access
+
+    :optparam integer partitions: How many partitions the queue should have.
+    :optparam type: Type of queue to create, 'user' or 'public'.
+    :optparam consistency: Level of consistency for the queue.
+    :optparam principles: List of App or Browser ID's separated
+                          with a comma if there's more than one
+
+    Update queue parameters. Partitions may only be increased, not decreased.
+    Other settings overwrite existing parameters for the queue, to modify the
+    principles one should first fetch the existing ones, change them as
+    appropriate and PUT the new ones.
+
+    Example response::
+
+        {
+            'status': 'ok',
+            'application_name': 'notifications',
+            'queue_name': 'ea2f39c0de9a4b9db6463123641631de',
+            'partitions': 1,
+            'type': 'user',
+            'consistency': 'strong'
+        }
+
+.. http:method:: DELETE /{application}/{queue_name}
+
+    :arg application: Application name
+    :arg queue_name: Queue name to access
+
+    Delete a queue and all its messages.
+
+    Example success response::
+
+        {'status': 'ok'}
+
 .. http:method:: GET /{application}/{queue_name}/info
 
     :arg application: Application name
     :arg queue_name: Queue name to access
+    :optparam include_count: Include the message count, use carefully as the
+                             counting could take awhile on larger and/or
+                             heavily partitioned queues.
 
     Get queue information. Returns a response indicating the status, and the
     information about the queue.
@@ -236,3 +227,47 @@ creates unless a set of principles was registered for the queue.
             'type': 'user',
             'count': 932
         }
+
+Message Resources
+=================
+
+.. http:method:: GET /{application}/{queue_name}/{message_id}
+
+    :arg application: Application name
+    :arg queue_name: Queue name to access
+    :arg message_id: A message ID to access
+
+    Returns an individual message from queuey. If the message has a
+    Content-Type recorded for it, the response will include it as an
+    HTTP header.
+
+.. http:method:: PUT /{application}/{queue_name}/{message_id}
+
+    :arg application: Application name
+    :arg queue_name: Queue name to access
+    :arg message_id: A message ID to access
+
+    Update the message stored at this id. The body and metadata associated
+    with the message may be changed.
+
+.. http:method:: DELETE /{application}/{queue_name}/{messages}
+
+    :arg application: Application name
+    :arg queue_name: Queue name to access
+    :arg messages: A single hex message id, or comma separated list of hex
+                   message id's. To indicate partitions for the messages,
+                   prefix the hex message with the partition number and a
+                   colon.
+
+    Delete a message, or multiple messages from a queue. The message ID must
+    be prefixed with the partition number and a colon if the queue has multiple
+    partitions to indicate which one contains the message.
+
+    Example of deleting a message from partition 2::
+
+        # The %3 is a URL encoded colon
+        DELETE /my_application/somequeuename/2%38cc967e0cf1e45e3b0d4926c90057caf
+
+    Example success response::
+
+        {'status': 'ok'}
