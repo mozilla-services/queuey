@@ -223,6 +223,18 @@ creates unless a set of principles was registered for the queue.
     be set by including the appropriate value with either ``X-TTL`` or 
     ``X-Partition`` HTTP headers in the request.
 
+    Example POST as seen by server including both *optional* HTTP headers::
+
+        POST /notifications/ea2f39c0de9a4b9db6463123641631de HTTP/1.1
+        Host: site.running.queuey
+        User-Agent: AwesomeClient
+        Content-Length: 36
+        Content-Type: application/text
+        X-TTL: 3600
+        X-Partition: 2
+
+        A really cool message body to store.
+
     Example success response::
 
         {
