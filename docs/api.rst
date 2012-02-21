@@ -85,7 +85,7 @@ creates unless a set of principles was registered for the queue.
                      hexadecimal message ID.
     :optparam limit: Only return N amount of messages.
     :optparam order: Order of messages, can be set to either `ascending` or
-                     `descending`. Defaults to `descending`.
+                     `descending`. Defaults to `ascending`.
     :optparam partitions: A specific partition number to retrieve messages from
                           or a comma separated list of partitions. Defaults to
                           retrieving messages from partition 1.
