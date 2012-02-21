@@ -121,6 +121,10 @@ creates unless a set of principles was registered for the queue.
     A form body containing a single message and optional partition
     value, or a set of message and partition pairs by number.
 
+    When the partition is not specified, the message will be randomly
+    assigned to one of the partitions for a queue (or just the first
+    one if the queue has only one partition).
+
     Example single message POST (shown as dict)::
 
         {
@@ -137,9 +141,8 @@ creates unless a set of principles was registered for the queue.
             'message.1.partition': '3'
         }
 
-    The second example lets the first message go to the default
-    partition (1), while the second message is sent to partition
-    3.
+    The second example lets the first message go to a random partition,
+    while the second message is sent specifically to partition 3.
 
     Example success response::
 
