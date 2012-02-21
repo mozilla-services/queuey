@@ -53,6 +53,31 @@ class TestQueueyApp(unittest.TestCase):
         eq_('Hello there!', msg['body'])
         eq_(1, msg['partition'])
 
+    def test_queue_and_get_since_ts(self):
+        app = self.makeOne()
+        resp = app.post('/queuey', headers=auth_header)
+        result = json.loads(resp.body)
+        queue_name = str(result['queue_name'])
+
+        # Post a message
+        resp = app.post('/queuey/' + queue_name,
+                        {'body': 'Hello there!'}, headers=auth_header)
+        resp = app.post('/queuey/' + queue_name,
+                        {'body': 'Hello there 2!'}, headers=auth_header)
+        result = json.loads(resp.body)
+        resp = app.post('/queuey/' + queue_name,
+                        {'body': 'Hello there! 3'}, headers=auth_header)
+        msg_ts = result['messages'][0]['timestamp']
+
+        # Fetch the messages
+        resp = app.get('/queuey/' + queue_name, {'since': msg_ts},
+                       headers=auth_header)
+        result = json.loads(resp.body)
+        eq_(2, len(result['messages']))
+        msg = result['messages'][0]
+        eq_('Hello there 2!', msg['body'])
+        eq_(1, msg['partition'])
+
     def test_queue_principles(self):
         app = self.makeOne()
         resp = app.post('/queuey', {'principles': 'app:queuey'},
@@ -126,7 +151,7 @@ class TestQueueyApp(unittest.TestCase):
         result = json.loads(resp.body)
         eq_(2, len(result['messages']))
         msg = result['messages'][0]
-        eq_('Hello msg 2', msg['body'])
+        eq_('Hello msg 1', msg['body'])
 
     def test_delete_queue(self):
         app = self.makeOne()

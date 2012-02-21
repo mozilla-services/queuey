@@ -56,7 +56,7 @@ class GetMessages(colander.MappingSchema):
     since = colander.SchemaNode(colander.String(), missing=None)
     limit = colander.SchemaNode(colander.Int(), missing=None,
                                 validator=colander.Range(1, 100))
-    order = colander.SchemaNode(colander.String(), missing="descending",
+    order = colander.SchemaNode(colander.String(), missing="ascending",
                                 validator=colander.OneOf(['descending',
                                                           'ascending']))
     partitions = colander.SchemaNode(CommaList(), missing=[1],

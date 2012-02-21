@@ -1,6 +1,8 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
+import re
+
 from pyramid.security import Allow
 from pyramid.security import Everyone
 
@@ -105,7 +107,7 @@ class Queue(object):
                                           msgs)
         rl = []
         for i, msg in enumerate(results):
-            rl.append({'key': msg[0], 'timestamp': msg[1],
+            rl.append({'key': msg[0], 'timestamp': repr(msg[1]),
                        'partition': messages[i]['partition']})
         return rl
 
@@ -113,6 +115,8 @@ class Queue(object):
         queue_names = []
         for part in partitions:
             queue_names.append('%s:%s' % (self.queue_name, part))
+        if since and re.match(r'^\d+(\.\d+)?', since):
+            since = float(since)
         results = self.storage.retrieve_batch(
             self.consistency, self.application, queue_names, start_at=since,
             limit=limit, order=order)
