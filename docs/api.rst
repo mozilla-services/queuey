@@ -168,6 +168,7 @@ creates unless a set of principles was registered for the queue.
         }
 
 .. http:method:: PUT /{application}/{queue_name}
+
     :arg application: Application name
     :arg queue_name: Queue name to access
 
