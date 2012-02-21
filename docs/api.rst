@@ -10,11 +10,11 @@ resource. Arrows around the name indicate variables in the URL.
 All calls return JSON, and unless otherwise indicated methods that take
 input in the body expect form-encoded variables.
 
-Application Resources
-=====================
+Queue Management
+================
 
-Access application information, and register queues. All calls to this resource
-must include an Authorization header with the application key::
+Access queue information, create, update, and delete queues. All calls to these
+methods must include an Authorization header with the application key::
 
     Authorization: Application <key here>
 
@@ -66,11 +66,49 @@ rejected.
             'consistency': 'strong'
         }
 
-Queue Resources
-===============
+.. http:method:: PUT /{application}/{queue_name}
 
-Create messages on a queue, get messages, and delete messages or an entire
-queue. Access varies depending on the queue, queues with a type of ``public`` 
+    :arg application: Application name
+    :arg queue_name: Queue name to access
+
+    :optparam integer partitions: How many partitions the queue should have.
+    :optparam type: Type of queue to create, 'user' or 'public'.
+    :optparam consistency: Level of consistency for the queue.
+    :optparam principles: List of App or Browser ID's separated
+                          with a comma if there's more than one
+
+    Update queue parameters. Partitions may only be increased, not decreased.
+    Other settings overwrite existing parameters for the queue, to modify the
+    principles one should first fetch the existing ones, change them as
+    appropriate and PUT the new ones.
+
+    Example response::
+
+        {
+            'status': 'ok',
+            'application_name': 'notifications',
+            'queue_name': 'ea2f39c0de9a4b9db6463123641631de',
+            'partitions': 1,
+            'type': 'user',
+            'consistency': 'strong'
+        }
+
+.. http:method:: DELETE /{application}/{queue_name}
+
+    :arg application: Application name
+    :arg queue_name: Queue name to access
+
+    Delete a queue and all its messages.
+
+    Example success response::
+
+        {'status': 'ok'}
+
+Multiple Messages
+=================
+
+Create messages on a queue, get messages, and delete messages. Access varies
+depending on the queue, queues with a type of ``public`` 
 may have messages viewed without any authentication. All other queue's require
 an Application key to create messages, and viewing messages varies depending
 on queue principles. By default an Application may create/view messages it
@@ -167,44 +205,6 @@ creates unless a set of principles was registered for the queue.
             ]
         }
 
-.. http:method:: PUT /{application}/{queue_name}
-
-    :arg application: Application name
-    :arg queue_name: Queue name to access
-
-    :optparam integer partitions: How many partitions the queue should have.
-    :optparam type: Type of queue to create, 'user' or 'public'.
-    :optparam consistency: Level of consistency for the queue.
-    :optparam principles: List of App or Browser ID's separated
-                          with a comma if there's more than one
-
-    Update queue parameters. Partitions may only be increased, not decreased.
-    Other settings overwrite existing parameters for the queue, to modify the
-    principles one should first fetch the existing ones, change them as
-    appropriate and PUT the new ones.
-
-    Example response::
-
-        {
-            'status': 'ok',
-            'application_name': 'notifications',
-            'queue_name': 'ea2f39c0de9a4b9db6463123641631de',
-            'partitions': 1,
-            'type': 'user',
-            'consistency': 'strong'
-        }
-
-.. http:method:: DELETE /{application}/{queue_name}
-
-    :arg application: Application name
-    :arg queue_name: Queue name to access
-
-    Delete a queue and all its messages.
-
-    Example success response::
-
-        {'status': 'ok'}
-
 .. http:method:: GET /{application}/{queue_name}/info
 
     :arg application: Application name
@@ -228,28 +228,6 @@ creates unless a set of principles was registered for the queue.
             'count': 932
         }
 
-Message Resources
-=================
-
-.. http:method:: GET /{application}/{queue_name}/{message_id}
-
-    :arg application: Application name
-    :arg queue_name: Queue name to access
-    :arg message_id: A message ID to access
-
-    Returns an individual message from queuey. If the message has a
-    Content-Type recorded for it, the response will include it as an
-    HTTP header.
-
-.. http:method:: PUT /{application}/{queue_name}/{message_id}
-
-    :arg application: Application name
-    :arg queue_name: Queue name to access
-    :arg message_id: A message ID to access
-
-    Update the message stored at this id. The body and metadata associated
-    with the message may be changed.
-
 .. http:method:: DELETE /{application}/{queue_name}/{messages}
 
     :arg application: Application name
@@ -271,3 +249,33 @@ Message Resources
     Example success response::
 
         {'status': 'ok'}
+
+Individual Messages
+===================
+
+.. http:method:: GET /{application}/{queue_name}/{message_id}
+
+    :arg application: Application name
+    :arg queue_name: Queue name to access
+    :arg message_id: A message ID to access
+
+    Returns an individual message from queuey. If the message has a
+    Content-Type recorded for it, the response will include it as an
+    HTTP header.
+
+.. http:method:: PUT /{application}/{queue_name}/{message_id}
+
+    :arg application: Application name
+    :arg queue_name: Queue name to access
+    :arg message_id: A message ID to access
+
+    Update the message stored at this id. The body and metadata associated
+    with the message may be changed.
+
+.. http:method:: DELETE /{application}/{queue_name}/{message_id}
+
+    :arg application: Application name
+    :arg queue_name: Queue name to access
+    :arg message_id: A message ID to access
+
+    Delete the message id at this URI.
