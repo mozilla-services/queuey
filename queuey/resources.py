@@ -14,6 +14,10 @@ class InvalidQueueName(Exception):
     """Raised when a queue name is invalid"""
 
 
+class InvalidUpdate(Exception):
+    """Raised when an update to existing data fails"""
+
+
 class Root(object):
     __acl__ = []
 
@@ -101,6 +105,20 @@ class Queue(object):
         # Everyons is allowed to view public queues
         if queue_data['type'] == 'public':
             acl.append((Allow, Everyone, 'view'))
+
+    def update_metadata(self, **metadata):
+        # Strip out data not being updated
+        metadata = dict((k, v) for k, v in metadata.items() if v)
+        if 'partitions' in metadata:
+            if metadata['partitions'] < self.partitions:
+                raise InvalidUpdate("Partitions can only be increased.")
+
+        self.metadata.register_queue(self.application, self.queue_name,
+                                     **metadata)
+        for k, v in metadata.items():
+            setattr(self, k, v)
+        if 'principles' in metadata:
+            self.principles = [x.strip() for x in metadata['principles'].split(',') if x]
 
     def push_batch(self, messages):
         """Push a batch of messages to the storage"""

@@ -49,7 +49,7 @@ rejected.
     :optparam consistency: Level of consistency for the queue, defaults to
                            ``strong``.
     :optparam principles: List of App or Browser ID's separated
-                  with a comma if there's more than one
+                          with a comma if there's more than one
 
     Create a new queue for the application. Returns a JSON response indicating
     the status, the UUID4 hex string of the queue name (if not supplied), and
@@ -152,6 +152,32 @@ creates unless a set of principles was registered for the queue.
                     'partition': 1
                 },
             ]
+        }
+
+.. http:method:: PUT /{application}/{queue_name}
+    :arg application: Application name
+    :arg queue_name: Queue name to access
+
+    :optparam integer partitions: How many partitions the queue should have.
+    :optparam type: Type of queue to create, 'user' or 'public'.
+    :optparam consistency: Level of consistency for the queue.
+    :optparam principles: List of App or Browser ID's separated
+                          with a comma if there's more than one
+
+    Update queue parameters. Partitions may only be increased, not decreased.
+    Other settings overwrite existing parameters for the queue, to modify the
+    principles one should first fetch the existing ones, change them as
+    appropriate and PUT the new ones.
+
+    Example response::
+
+        {
+            'status': 'ok',
+            'application_name': 'notifications',
+            'queue_name': 'ea2f39c0de9a4b9db6463123641631de',
+            'partitions': 1,
+            'type': 'user',
+            'consistency': 'strong'
         }
 
 .. http:method:: DELETE /{application}/{queue_name}

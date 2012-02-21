@@ -104,6 +104,43 @@ class TestQueueyApp(unittest.TestCase):
         assert 'app:queuey' in result['principles']
         assert 'app:george' in result['principles']
 
+    def test_queue_update(self):
+        app = self.makeOne()
+        resp = app.post('/queuey', {'principles': 'app:queuey'},
+                        headers=auth_header)
+        result = json.loads(resp.body)
+        queue_name = str(result['queue_name'])
+
+        # Get the queue info
+        resp = app.get('/queuey/%s/info' % queue_name, headers=auth_header)
+        result = json.loads(resp.body)
+        eq_(0, result['count'])
+        assert 'app:queuey' in result['principles']
+        eq_(1, result['partitions'])
+
+        # Update the partitions
+        resp = app.put('/queuey/%s' % queue_name, {'partitions': 2},
+                       headers=auth_header)
+        result = json.loads(resp.body)
+        eq_(0, result['count'])
+        assert 'app:queuey' in result['principles']
+        eq_(2, result['partitions'])
+
+        # Add principles
+        resp = app.put('/queuey/%s' % queue_name,
+                       {'principles': 'app:queuey,app:notifications'},
+                       headers=auth_header)
+        result = json.loads(resp.body)
+        eq_(0, result['count'])
+        assert 'app:queuey' in result['principles']
+        assert 'app:notifications' in result['principles']
+
+        # Bad partition update
+        resp = app.put('/queuey/%s' % queue_name, {'partitions': 1},
+                       headers=auth_header, status=400)
+        result = json.loads(resp.body)
+        eq_('error', result['status'])
+
     def test_public_queue(self):
         app = self.makeOne()
         resp = app.post('/queuey', {'type': 'public'},

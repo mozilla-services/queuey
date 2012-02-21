@@ -26,6 +26,7 @@ def _fixup_dict(dct):
 @view_config(context='queuey.security.InvalidBrowserID', renderer='json')
 @view_config(context='queuey.security.InvalidApplicationKey', renderer='json')
 @view_config(context='queuey.resources.InvalidQueueName', renderer='json')
+@view_config(context='queuey.resources.InvalidUpdate', renderer='json')
 def bad_params(context, request):
     exc = request.exception
     cls_name = exc.__class__.__name__
@@ -33,6 +34,9 @@ def bad_params(context, request):
         request.response.status = 400
         errors = exc.asdict()
     elif cls_name == 'InvalidParameter':
+        request.response.status = 400
+        errors = {cls_name: exc.message}
+    elif cls_name == 'InvalidUpdate':
         request.response.status = 400
         errors = {cls_name: exc.message}
     elif cls_name == 'InvalidQueueName':
@@ -104,6 +108,14 @@ def get_messages(context, request):
         'status': 'ok',
         'messages': context.get_messages(**params)
     }
+
+
+@view_config(context=Queue, request_method='PUT', renderer='json',
+             permission='create')
+def update_queue(context, request):
+    params = validators.UpdateQueue().deserialize(request.POST)
+    context.update_metadata(**params)
+    return queue_info(context, request)
 
 
 @view_config(context=Queue, name='info', request_method='GET', renderer='json',

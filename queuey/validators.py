@@ -73,9 +73,21 @@ class DeleteMessages(colander.MappingSchema):
                                      validator=comma_int_list)
 
 
+class UpdateQueue(colander.MappingSchema):
+    partitions = colander.SchemaNode(colander.Int(), missing=None,
+                                     validator=colander.Range(1, 200))
+    type = colander.SchemaNode(colander.String(), missing='user',
+                               validator=colander.OneOf(['public', 'user']))
+    consistency = colander.SchemaNode(
+        colander.String(), missing='strong', validator=colander.OneOf(
+            ['weak', 'strong', 'very_strong']))
+    principles = colander.SchemaNode(colander.String(), missing=None,
+                                      validator=principle_validator)
+
+
 class NewQueue(colander.MappingSchema):
-    queue_name = _queuename_node
     partitions = _partition_node
+    queue_name = _queuename_node
     type = colander.SchemaNode(colander.String(), missing='user',
                                validator=colander.OneOf(['public', 'user']))
     consistency = colander.SchemaNode(
