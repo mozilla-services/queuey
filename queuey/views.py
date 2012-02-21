@@ -30,14 +30,10 @@ def _fixup_dict(dct):
 def bad_params(context, request):
     exc = request.exception
     cls_name = exc.__class__.__name__
+    request.response.status = 400
     if cls_name == 'Invalid':
-        request.response.status = 400
         errors = exc.asdict()
-    elif cls_name == 'InvalidParameter':
-        request.response.status = 400
-        errors = {cls_name: exc.message}
-    elif cls_name == 'InvalidUpdate':
-        request.response.status = 400
+    elif cls_name in ('InvalidParameter', 'InvalidUpdate'):
         errors = {cls_name: exc.message}
     elif cls_name == 'InvalidQueueName':
         request.response.status = 404
