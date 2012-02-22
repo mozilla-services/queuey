@@ -65,14 +65,6 @@ class GetMessages(colander.MappingSchema):
                                     validator=comma_int_list)
 
 
-class DeleteMessages(colander.MappingSchema):
-    messages = colander.SchemaNode(CommaList(), missing=None,
-                                   validator=valid_hexs)
-    delete_registration = colander.SchemaNode(colander.Bool(), missing=False)
-    partitions = colander.SchemaNode(CommaList(), missing=[],
-                                     validator=comma_int_list)
-
-
 class UpdateQueue(colander.MappingSchema):
     partitions = colander.SchemaNode(colander.Int(), missing=None,
                                      validator=colander.Range(1, 200))
@@ -100,6 +92,8 @@ class NewQueue(colander.MappingSchema):
 class QueueList(colander.MappingSchema):
     limit = colander.SchemaNode(colander.Int(), missing=None)
     offset = colander.SchemaNode(colander.String(), missing=None)
+    details = colander.SchemaNode(colander.Bool(), missing=False)
+    include_count = colander.SchemaNode(colander.Bool(), missing=False)
 
 
 class Message(colander.MappingSchema):

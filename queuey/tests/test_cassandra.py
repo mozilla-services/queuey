@@ -255,14 +255,11 @@ class TestCassandraMetadata(unittest.TestCase):
         backend = self._makeOne()
         backend.register_queue('myapp', 'fredrick')
         eq_(1, len(backend.queue_list('myapp')))
-        eq_('myapp',
-            backend.queue_information('myapp', 'fredrick')['application'])
 
         # Update metadata
         backend.register_queue('myapp', 'fredrick', partitions=5)
-        info = backend.queue_information('myapp', 'fredrick')
-        eq_('myapp', info['application'])
-        eq_(5, info['partitions'])
+        info = backend.queue_information('myapp', ['fredrick'])
+        eq_(5, info[0]['partitions'])
 
     def test_queue_paging(self):
         backend = self._makeOne()
@@ -291,7 +288,7 @@ class TestCassandraMetadata(unittest.TestCase):
         backend = self._makeOne()
         backend.register_queue('myapp', 'fredrick', partitions=3)
 
-        info = backend.queue_information('myapp', 'fredrick')
-        eq_(info['partitions'], 3)
+        info = backend.queue_information('myapp', ['fredrick'])
+        eq_(info[0]['partitions'], 3)
 
-        eq_({}, backend.queue_information('myapp', 'asdfasdf'))
+        eq_([], backend.queue_information('myapp', ['asdfasdf']))

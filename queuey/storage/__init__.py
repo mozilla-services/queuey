@@ -262,14 +262,14 @@ class MetadataBackend(Interface):
 
         """
 
-    def queue_information(self, application_name, queue_name):
+    def queue_information(self, application_name, queue_names):
         """Return information regarding the queue for the application
 
         This is a mix of basic queue information as well as the
         queue metadata.
 
         :param application_name: Name of the application
-        :param queue_name: Queue name
+        :param queue_names: Queue names to retreive information from
 
         :returns: Queue information, an empty dict if the queue doesn't
                   exist
@@ -277,6 +277,7 @@ class MetadataBackend(Interface):
 
         Example response::
 
+            [
             {
                 'created': 82989382,
                 'partitions': 20,
@@ -285,5 +286,6 @@ class MetadataBackend(Interface):
                 'consistency': 'strong',
                 'principles': 'bid:fred@browserid.org,bid:george@home.com'
             }
+            ]
 
         """

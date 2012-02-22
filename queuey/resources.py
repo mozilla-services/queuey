@@ -8,6 +8,9 @@ from pyramid.security import Everyone
 
 
 FLOAT_REGEX = re.compile(r'^\d+(\.\d+)?')
+MESSAGE_REGEX = re.compile(
+    r'(?:\d\:)?[a-zA-Z0-9]{32}(?:\,(?:\d{1,3}\:)?[a-zA-Z0-9]{32}){0,}'
+)
 
 
 class InvalidQueueName(Exception):
@@ -18,9 +21,24 @@ class InvalidUpdate(Exception):
     """Raised when an update to existing data fails"""
 
 
+class InvalidMessageID(Exception):
+    """Raised for invalid message ID's"""
+
+
 class Root(object):
     __acl__ = []
 
+    def __init__(self, request):
+        self.request = request
+
+    def __getitem__(self, name):
+        if name == 'v1':
+            return QueueyVersion1API(self.request)
+        else:
+            raise KeyError("No key %s found" % name)
+
+
+class QueueyVersion1API(object):
     def __init__(self, request):
         self.request = request
 
@@ -64,9 +82,29 @@ class Application(object):
             **metadata
         )
 
-    def queue_list(self, limit=None, offset=None):
-        return self.metadata.queue_list(self.application_name, limit=limit,
-                                        offset=offset)
+    def queue_list(self, details=False, include_count=False, limit=None,
+                   offset=None):
+        queues = self.metadata.queue_list(self.application_name, limit=limit,
+                                          offset=offset)
+        queue_list = []
+        queue_data = []
+        if details:
+            queue_data = self.metadata.queue_information(self.application_name,
+                                                         queues)
+        for index, queue_name in enumerate(queues):
+            qd = {
+                'queue_name': queue_name,
+            }
+            if details:
+                qd.update(queue_data[index])
+            if include_count:
+                total = 0
+                for num in range(self.partitions):
+                    qn = '%s-%s' % (queue_name, num + 1)
+                    total += self.storage.count('weak', self.application, qn)
+                qd['count'] = total
+            queue_list.append(qd)
+        return queue_list
 
 
 class Queue(object):
@@ -88,7 +126,7 @@ class Queue(object):
         self.__acl__ = acl = [
             (Allow, app_id, 'create'),
             (Allow, app_id, 'info'),
-            (Allow, app_id, 'delete')
+            (Allow, app_id, 'delete_queue')
         ]
 
         # If there's additional principles, view/info/delete messages will
@@ -106,6 +144,12 @@ class Queue(object):
         if queue_data['type'] == 'public':
             acl.append((Allow, Everyone, 'view'))
 
+    def __getitem__(self, name):
+        """Determine if this is a multiple message context"""
+        if not MESSAGE_REGEX.match(name):
+            raise InvalidMessageID("Invalid message id's.")
+        return MessageBatch(self.request, self, name)
+
     def update_metadata(self, **metadata):
         # Strip out data not being updated
         metadata = dict((k, v) for k, v in metadata.items() if v)
@@ -118,12 +162,13 @@ class Queue(object):
         for k, v in metadata.items():
             setattr(self, k, v)
         if 'principles' in metadata:
-            self.principles = [x.strip() for x in metadata['principles'].split(',') if x]
+            self.principles = [x.strip() for x in
+                               metadata['principles'].split(',') if x]
 
     def push_batch(self, messages):
         """Push a batch of messages to the storage"""
         msgs = [('%s:%s' % (self.queue_name, x['partition']), x['body'],
-                 x['ttl'], {}) for x in messages]
+                 x['ttl'], x.get('metadata', {})) for x in messages]
         results = self.storage.push_batch(self.consistency, self.application,
                                           msgs)
         rl = []
@@ -147,27 +192,33 @@ class Queue(object):
             del res['queue_name']
         return results
 
-    def delete_messages(self, messages, partitions=None):
-        partition = partitions[0] if partitions else 1
-        qn = '%s:%s' % (self.queue_name, partition)
-        return self.storage.delete(self.consistency, self.application, qn,
-                                   *messages)
-
-    def delete(self, delete_registration=False, partitions=None):
-        partitions = partitions or [1]
-        if delete_registration:
-            partitions = range(1, self.partitions + 1)
+    def delete(self):
+        partitions = range(1, self.partitions + 1)
         for partition in partitions:
             self.storage.truncate(self.consistency, self.application, '%s:%s' %
                                   (self.queue_name, partition))
-        if delete_registration:
-            self.metadata.remove_queue(self.application, self.queue_name)
+        self.metadata.remove_queue(self.application, self.queue_name)
         return True
 
-    @property
-    def count(self):
-        total = 0
-        for num in range(self.partitions):
-            qn = '%s-%s' % (self.queue_name, num + 1)
-            total += self.storage.count(self.consistency, self.application, qn)
-        return total
+
+class MessageBatch(object):
+    def __init__(self, request, queue, message_ids):
+        self.request, self.queue = request, queue
+        self.message_ids = [x.strip() for x in message_ids.split(',')]
+
+        # Copy parent ACL
+        self.__acl__ = queue.__acl__
+
+    def delete_messages(self):
+        partition_hash = {}
+        for msg_id in self.message_ids:
+            if ':' in msg_id:
+                partition, msg_id = msg_id.split(':')
+            else:
+                partition = 1
+            qn = '%s:%s' % (self.queue_name, partition)
+            partition_hash[qn].append(msg_id)
+        for queue, msgs in partition_hash:
+            self.storage.delete(self.queue.consistency, self.queue.application,
+                                queue, *msgs)
+        return

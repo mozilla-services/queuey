@@ -4,11 +4,13 @@
 import random
 
 from pyramid.view import view_config
+import simplejson
 
 from queuey import validators
 
 from queuey.resources import Application
 from queuey.resources import Queue
+from queuey.resources import MessageBatch
 
 
 class InvalidParameter(Exception):
@@ -27,13 +29,14 @@ def _fixup_dict(dct):
 @view_config(context='queuey.security.InvalidApplicationKey', renderer='json')
 @view_config(context='queuey.resources.InvalidQueueName', renderer='json')
 @view_config(context='queuey.resources.InvalidUpdate', renderer='json')
+@view_config(context='queuey.resources.InvalidMessageID', renderer='json')
 def bad_params(context, request):
     exc = request.exception
     cls_name = exc.__class__.__name__
     request.response.status = 400
     if cls_name == 'Invalid':
         errors = exc.asdict()
-    elif cls_name in ('InvalidParameter', 'InvalidUpdate'):
+    elif cls_name in ('InvalidParameter', 'InvalidUpdate', 'InvalidMessageID'):
         errors = {cls_name: exc.message}
     elif cls_name == 'InvalidQueueName':
         request.response.status = 404
@@ -68,22 +71,17 @@ def queue_list(context, request):
     }
 
 
-@view_config(context=Queue, request_method='POST', renderer='json',
+@view_config(context=Queue, request_method='POST',
+             header="Content-Type:application/json", renderer='json',
              permission='create')
-def new_message(context, request):
+def new_messages(context, request):
     request.response.status = 201
-    if 'body' in request.POST:
-        # Single message, use appropriate schema
-        msgs = [validators.Message().deserialize(request.POST)]
-    else:
-        # Multiple messages, fixup the dict for colander first
-        msgs = _fixup_dict(request.POST)
-        schema = validators.Messages()
-        try:
-            msgs = schema.unflatten(msgs)
-        except Exception:
-            msgs = {}
-        msgs = schema.deserialize(msgs)['message']
+    try:
+        msgs = {'message': simplejson.loads(request.body)}
+    except:
+        # A bare except like this is horrible, but we need to toss this right
+        raise InvalidParameter("Unable to properly deserialize JSON body.")
+    msgs = validators.Message().deserialize(msgs)['message']
 
     # Assign partitions
     for msg in msgs:
@@ -93,6 +91,34 @@ def new_message(context, request):
     return {
         'status': 'ok',
         'messages': context.push_batch(msgs)
+    }
+
+
+@view_config(context=Queue, request_method='POST', renderer='json',
+             permission='create')
+def new_message(context, request):
+    request.response.status = 201
+    if not request.body:
+        raise InvalidParameter("No request body found.")
+
+    msg = {'body': request.body}
+    if 'X-Partition' in request.headers:
+        try:
+            msg['partition'] = int(request.headers['X-Partition'])
+        except (ValueError, TypeError):
+            raise InvalidParameter("Invalid X-Partition header.")
+    else:
+        msg['partition'] = random.randint(1, context.partitions)
+
+    if 'X-TTL' in request.headers:
+        try:
+            msg['ttl'] = int(request.headers['X-TTL'])
+        except (ValueError, TypeError):
+            raise InvalidParameter("Invalid X-TTL header.")
+
+    return {
+        'status': 'ok',
+        'messages': context.push_batch([msg])
     }
 
 
@@ -111,15 +137,8 @@ def get_messages(context, request):
 def update_queue(context, request):
     params = validators.UpdateQueue().deserialize(request.POST)
     context.update_metadata(**params)
-    return queue_info(context, request)
-
-
-@view_config(context=Queue, name='info', request_method='GET', renderer='json',
-             permission='info')
-def queue_info(context, request):
     return dict(
         status='ok',
-        application_name=context.application,
         queue_name=context.queue_name,
         partitions=context.partitions,
         created=context.created,
@@ -130,16 +149,14 @@ def queue_info(context, request):
 
 
 @view_config(context=Queue, request_method='DELETE', renderer='json',
-             permission='delete')
+             permission='delete_queue')
 def delete_queue(context, request):
-    params = validators.DeleteMessages().deserialize(request.GET)
-    if params['messages'] and len(params['partitions']) > 1:
-        raise InvalidParameter("Partitions can only be a single value if "
-                               "messages are provided.")
-    if params['messages']:
-        del params['delete_registration']
-        context.delete_messages(**params)
-    else:
-        del params['messages']
-        context.delete(**params)
+    context.delete()
+    return {'status': 'ok'}
+
+
+@view_config(context=MessageBatch, request_method='DELETE', renderer='json',
+             permission='delete')
+def delete_messages(context, request):
+    context.delete_messages()
     return {'status': 'ok'}

@@ -321,11 +321,11 @@ class CassandraMetadata(object):
         app_len = len(application_name) + 1
         return [key[app_len:] for key, _ in results]
 
-    def queue_information(self, application_name, queue_name):
+    def queue_information(self, application_name, queue_names):
         """Return information on a registered queue"""
         cl = self.cl or LOCAL_QUORUM
-        queue_name = '%s:%s' % (application_name, queue_name)
-        try:
-            return self.queue_fam.get(queue_name, read_consistency_level=cl)
-        except pycassa.NotFoundException:
-            return {}
+        queue_names = ['%s:%s' % (application_name, queue_name) for
+                       queue_name in queue_names]
+        results = self.queue_fam.multiget(keys=queue_names,
+                                          read_consistency_level=cl)
+        return [x[1] for x in results.items()]
