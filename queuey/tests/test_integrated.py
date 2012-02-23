@@ -216,7 +216,7 @@ class TestQueueyApp(unittest.TestCase):
         eq_(2, len(result['messages']))
 
         # Delete 1 message
-        q = urllib.quote_plus('%s' % msg3['key'])
+        q = str(urllib.quote_plus('%s' % msg3['key']))
         resp = app.delete('/v1/queuey/%s/%s' % (queue_name, q), headers=auth_header)
 
         resp = app.get('/v1/queuey/' + queue_name, {'partitions': '1,2,3'},
