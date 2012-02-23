@@ -131,6 +131,7 @@ class Queue(object):
         app_id = 'app:%s' % self.application
         self.__acl__ = acl = [
             (Allow, app_id, 'create'),
+            (Allow, app_id, 'create_queue'),
             (Allow, app_id, 'info'),
             (Allow, app_id, 'delete_queue')
         ]
