@@ -16,14 +16,17 @@ MESSAGE_REGEX = re.compile(
 
 class InvalidQueueName(Exception):
     """Raised when a queue name is invalid"""
+    status = 404
 
 
 class InvalidUpdate(Exception):
     """Raised when an update to existing data fails"""
+    status = 400
 
 
 class InvalidMessageID(Exception):
     """Raised for invalid message ID's"""
+    status = 400
 
 
 class Root(object):

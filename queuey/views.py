@@ -15,6 +15,7 @@ from queuey.resources import MessageBatch
 
 class InvalidParameter(Exception):
     """Raised in views to flag a bad parameter"""
+    status = 400
 
 
 # Our invalid schema catch-all
@@ -28,17 +29,12 @@ class InvalidParameter(Exception):
 def bad_params(context, request):
     exc = request.exception
     cls_name = exc.__class__.__name__
-    request.response.status = 400
     if cls_name == 'Invalid':
         errors = exc.asdict()
-    elif cls_name in ('InvalidParameter', 'InvalidUpdate', 'InvalidMessageID'):
-        errors = {cls_name: str(exc)}
-    elif cls_name == 'InvalidQueueName':
-        request.response.status = 404
-        errors = {cls_name: str(exc)}
+        request.response.status = 400
     else:
+        request.response.status = getattr(exc, 'status', 401)
         errors = {cls_name: str(exc)}
-        request.response.status = 401
     return {
         'status': 'error',
         'error_msg': errors
