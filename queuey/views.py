@@ -62,7 +62,7 @@ def queue_list(context, request):
 
 
 @view_config(context=Queue, request_method='PUT', renderer='json',
-             permission='create')
+             permission='create_queue')
 def update_queue(context, request):
     params = validators.UpdateQueue().deserialize(request.POST)
     context.update_metadata(**params)
