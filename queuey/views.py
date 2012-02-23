@@ -17,11 +17,6 @@ class InvalidParameter(Exception):
     """Raised in views to flag a bad parameter"""
 
 
-def _fixup_dict(dct):
-    """Colander has an issue with unflatten that requires a leading ."""
-    return dict(('.' + k, v) for k, v in dct.items())
-
-
 # Our invalid schema catch-all
 @view_config(context=InvalidParameter, renderer='json')
 @view_config(context='colander.Invalid', renderer='json')
@@ -37,12 +32,12 @@ def bad_params(context, request):
     if cls_name == 'Invalid':
         errors = exc.asdict()
     elif cls_name in ('InvalidParameter', 'InvalidUpdate', 'InvalidMessageID'):
-        errors = {cls_name: exc.message}
+        errors = {cls_name: str(exc)}
     elif cls_name == 'InvalidQueueName':
         request.response.status = 404
-        errors = {cls_name: exc.message}
+        errors = {cls_name: str(exc)}
     else:
-        errors = {cls_name: exc.message}
+        errors = {cls_name: str(exc)}
         request.response.status = 401
     return {
         'status': 'error',
@@ -57,8 +52,7 @@ def create_queue(context, request):
     params = schema.deserialize(request.POST)
     context.register_queue(**params)
     request.response.status = 201
-    return dict(status='ok', application_name=context.application_name,
-                **params)
+    return dict(status='ok', **params)
 
 
 @view_config(context=Application, request_method='GET', renderer='json',
@@ -71,17 +65,32 @@ def queue_list(context, request):
     }
 
 
+@view_config(context=Queue, request_method='PUT', renderer='json',
+             permission='create')
+def update_queue(context, request):
+    params = validators.UpdateQueue().deserialize(request.POST)
+    context.update_metadata(**params)
+    return dict(
+        status='ok',
+        queue_name=context.queue_name,
+        partitions=context.partitions,
+        created=context.created,
+        principles=context.principles,
+        type=context.type
+    )
+
+
 @view_config(context=Queue, request_method='POST',
              header="Content-Type:application/json", renderer='json',
              permission='create')
 def new_messages(context, request):
     request.response.status = 201
     try:
-        msgs = {'message': simplejson.loads(request.body)}
+        msgs = simplejson.loads(request.body)['messages']
     except:
         # A bare except like this is horrible, but we need to toss this right
         raise InvalidParameter("Unable to properly deserialize JSON body.")
-    msgs = validators.Message().deserialize(msgs)['message']
+    msgs = validators.MessageList().deserialize(msgs)
 
     # Assign partitions
     for msg in msgs:
@@ -115,6 +124,8 @@ def new_message(context, request):
             msg['ttl'] = int(request.headers['X-TTL'])
         except (ValueError, TypeError):
             raise InvalidParameter("Invalid X-TTL header.")
+    else:
+        msg['ttl'] = 60 * 60 * 24 * 3
 
     return {
         'status': 'ok',
@@ -132,31 +143,10 @@ def get_messages(context, request):
     }
 
 
-@view_config(context=Queue, request_method='PUT', renderer='json',
-             permission='create')
-def update_queue(context, request):
-    params = validators.UpdateQueue().deserialize(request.POST)
-    context.update_metadata(**params)
-    return dict(
-        status='ok',
-        queue_name=context.queue_name,
-        partitions=context.partitions,
-        created=context.created,
-        count=context.count,
-        principles=context.principles,
-        type=context.type
-    )
-
-
 @view_config(context=Queue, request_method='DELETE', renderer='json',
              permission='delete_queue')
-def delete_queue(context, request):
-    context.delete()
-    return {'status': 'ok'}
-
-
 @view_config(context=MessageBatch, request_method='DELETE', renderer='json',
              permission='delete')
-def delete_messages(context, request):
-    context.delete_messages()
+def delete(context, request):
+    context.delete()
     return {'status': 'ok'}

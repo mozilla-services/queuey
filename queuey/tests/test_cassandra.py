@@ -292,3 +292,12 @@ class TestCassandraMetadata(unittest.TestCase):
         eq_(info[0]['partitions'], 3)
 
         eq_([], backend.queue_information('myapp', ['asdfasdf']))
+
+    def test_must_use_list(self):
+        @raises(Exception)
+        def testit():
+            backend = self._makeOne()
+            backend.register_queue('myapp', 'fredrick', partitions=3)
+            queue_name = uuid.uuid4().hex
+            backend.queue_information('myapp', queue_name)
+        testit()

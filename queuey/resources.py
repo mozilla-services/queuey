@@ -1,6 +1,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
+import collections
 import re
 
 from pyramid.security import Allow
@@ -56,6 +57,7 @@ class Application(object):
         self.request = request
         self.application_name = application_name
         self.metadata = request.registry['backend_metadata']
+        self.storage = request.registry['backend_storage']
         app_id = 'app:%s' % self.application_name
 
         # Applications can create queues and view existing queues
@@ -67,10 +69,10 @@ class Application(object):
     def __getitem__(self, name):
         if len(name) > 50:
             raise InvalidQueueName("Queue name longer than 50 characters.")
-        data = self.metadata.queue_information(self.application_name, name)
+        data = self.metadata.queue_information(self.application_name, [name])
         if not data:
             raise InvalidQueueName("Queue of that name was not found.")
-        return Queue(self.request, name, data)
+        return Queue(self.request, name, data[0])
 
     def register_queue(self, queue_name, **metadata):
         """Register a queue for this application"""
@@ -88,20 +90,21 @@ class Application(object):
                                           offset=offset)
         queue_list = []
         queue_data = []
-        if details:
+        if details or include_count:
             queue_data = self.metadata.queue_information(self.application_name,
                                                          queues)
         for index, queue_name in enumerate(queues):
             qd = {
                 'queue_name': queue_name,
             }
-            if details:
+            if details or include_count:
                 qd.update(queue_data[index])
             if include_count:
                 total = 0
-                for num in range(self.partitions):
+                for num in range(queue_data[index]['partitions']):
                     qn = '%s-%s' % (queue_name, num + 1)
-                    total += self.storage.count('weak', self.application, qn)
+                    total += self.storage.count('weak', self.application_name,
+                                                qn)
                 qd['count'] = total
             queue_list.append(qd)
         return queue_list
@@ -133,12 +136,13 @@ class Queue(object):
         # be granted to them
         if self.principles:
             for principle in self.principles:
-                for permission in ['view', 'info', 'delete']:
+                for permission in ['view', 'delete']:
                     acl.append((Allow, principle, permission))
         else:
             # If there are no additional principles, the application
-            # may also view messages in the queue
+            # may also view and delete messages in the queue
             acl.append((Allow, app_id, 'view'))
+            acl.append((Allow, app_id, 'delete'))
 
         # Everyons is allowed to view public queues
         if queue_data['type'] == 'public':
@@ -207,18 +211,20 @@ class MessageBatch(object):
         self.message_ids = [x.strip() for x in message_ids.split(',')]
 
         # Copy parent ACL
-        self.__acl__ = queue.__acl__
+        self.__acl__ = queue.__acl__[:]
 
-    def delete_messages(self):
-        partition_hash = {}
+    def delete(self):
+        partition_hash = collections.defaultdict(lambda: [])
         for msg_id in self.message_ids:
             if ':' in msg_id:
                 partition, msg_id = msg_id.split(':')
             else:
                 partition = 1
-            qn = '%s:%s' % (self.queue_name, partition)
+            qn = '%s:%s' % (self.queue.queue_name, partition)
             partition_hash[qn].append(msg_id)
-        for queue, msgs in partition_hash:
-            self.storage.delete(self.queue.consistency, self.queue.application,
-                                queue, *msgs)
+        for queue, msgs in partition_hash.iteritems():
+            self.queue.storage.delete(
+                    self.queue.consistency,
+                    self.queue.application,
+                    queue, *msgs)
         return

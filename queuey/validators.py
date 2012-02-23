@@ -8,7 +8,6 @@ import colander
 
 BID_REGEX = re.compile(r'^(bid:\w+@\w+\.\w+|app:\w+)$')
 INT_REGEX = re.compile(r'^\d+$')
-HEX_REGEX = re.compile(r'[a-zA-Z0-9]{32}')
 
 
 @colander.deferred
@@ -43,14 +42,6 @@ def comma_int_list(node, value):
            'integer.' % value)
     for val in value:
         if not INT_REGEX.match(val):
-            raise colander.Invalid(node, msg)
-
-
-def valid_hexs(node, value):
-    msg = ('%r is not a valid comma separated list of message ids or a single '
-           'message id.' % value)
-    for val in value:
-        if not HEX_REGEX.match(val):
             raise colander.Invalid(node, msg)
 
 
@@ -106,7 +97,3 @@ class Message(colander.MappingSchema):
 
 class MessageList(colander.SequenceSchema):
     message = Message()
-
-
-class Messages(colander.MappingSchema):
-    message = MessageList()

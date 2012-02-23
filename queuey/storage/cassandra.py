@@ -324,6 +324,8 @@ class CassandraMetadata(object):
     def queue_information(self, application_name, queue_names):
         """Return information on a registered queue"""
         cl = self.cl or LOCAL_QUORUM
+        if not isinstance(queue_names, list):
+            raise Exception("Queue names must be a list.")
         queue_names = ['%s:%s' % (application_name, queue_name) for
                        queue_name in queue_names]
         results = self.queue_fam.multiget(keys=queue_names,
