@@ -30,10 +30,10 @@ endif
 ifdef PYPISTRICT
 	PYPIOPTIONS += -s
 	ifdef PYPIEXTRAS
-		HOST = `python2.6 -c "import urlparse; print urlparse.urlparse('$(PYPI)')[1] + ',' + urlparse.urlparse('$(PYPIEXTRAS)')[1]"`
+		HOST = `python -c "import urlparse; print urlparse.urlparse('$(PYPI)')[1] + ',' + urlparse.urlparse('$(PYPIEXTRAS)')[1]"`
 
 	else
-		HOST = `python2.6 -c "import urlparse; print urlparse.urlparse('$(PYPI)')[1]"`
+		HOST = `python -c "import urlparse; print urlparse.urlparse('$(PYPI)')[1]"`
 	endif
 
 endif
@@ -42,7 +42,6 @@ INSTALL += $(INSTALLOPTIONS)
 
 SW = sw
 CASSANDRA = $(BIN)/cassandra/bin/cassandra
-ZOOKEEPER = $(BIN)/zookeeper
 BUILD_DIRS = bin build deps include lib lib64
 
 
@@ -51,7 +50,7 @@ BUILD_DIRS = bin build deps include lib lib64
 all:	build
 
 $(BIN)/python:
-	python2.6 $(SW)/virtualenv.py --no-site-packages --distribute .
+	python $(SW)/virtualenv.py --no-site-packages --distribute .
 	rm distribute-0.6.19.tar.gz
 
 $(BIN)/pip: $(BIN)/python
@@ -59,23 +58,6 @@ $(BIN)/pip: $(BIN)/python
 lib: $(BIN)/pip
 	$(INSTALL) -r dev-reqs.txt
 	$(PYTHON) setup.py develop
-
-$(ZOOKEEPER):
-	mkdir -p bin
-	cd bin && \
-	curl --silent http://mirrors.ibiblio.org/apache//zookeeper/stable/zookeeper-3.3.4.tar.gz | tar -zvx
-	mv bin/zookeeper-3.3.4 bin/zookeeper
-	cd bin/zookeeper && ant compile
-	cd bin/zookeeper/src/c && \
-	./configure && \
-	make
-	cd bin/zookeeper/src/contrib/zkpython && \
-	mv build.xml old_build.xml && \
-	cat old_build.xml | sed 's|executable="python"|executable="../../../../../bin/python"|g' > build.xml && \
-	ant install
-	cp etc/zoo.cfg bin/zookeeper/conf/
-
-zookeeper: 	$(ZOOKEEPER)
 
 $(CASSANDRA):
 	mkdir -p bin
@@ -99,7 +81,6 @@ clean:	clean-env
 
 build: lib
 	$(INSTALL) MoPyTools
-	$(INSTALL) WebTest
 	$(PYTHON) setup.py develop
 	$(BUILDAPP) -c $(CHANNEL) $(PYPIOPTIONS) $(DEPS)
 
