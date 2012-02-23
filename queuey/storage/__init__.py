@@ -33,7 +33,7 @@ class StorageUnavailable(BaseException):
 
 class MessageQueueBackend(Interface):
     """A MessageQueue Backend"""
-    def __init__(self, username=None, password=None, database='MessageQueue',
+    def __init__(username=None, password=None, database='MessageQueue',
                  host='localhost'):
         """Initialize the backend
 
@@ -42,7 +42,7 @@ class MessageQueueBackend(Interface):
 
         """
 
-    def retrieve_batch(self, consistency, application_name, queue_names,
+    def retrieve_batch(consistency, application_name, queue_names,
                        limit=None, include_metadata=False, start_at=None,
                        order="ascending"):
         """Retrieve a batch of messages from a queue
@@ -89,7 +89,7 @@ class MessageQueueBackend(Interface):
 
         """
 
-    def retrieve(self, consistency, application_name, queue_name, message_id,
+    def retrieve(consistency, application_name, queue_name, message_id,
                  include_metadata=False):
         """Retrieve a single message
 
@@ -113,7 +113,7 @@ class MessageQueueBackend(Interface):
 
         """
 
-    def push(self, consistency, application_name, queue_name, message,
+    def push(consistency, application_name, queue_name, message,
              metadata=None, ttl=3600 * 24 * 3):
         """Push a message onto the given queue
 
@@ -138,7 +138,7 @@ class MessageQueueBackend(Interface):
 
         """
 
-    def push_batch(self, consistency, application_name, message_data):
+    def push_batch(consistency, application_name, message_data):
         """Push a batch of messages to queues
 
         The queue(s) are assumed to exist, and will be created if
@@ -171,7 +171,7 @@ class MessageQueueBackend(Interface):
 
         """
 
-    def truncate(self, consistency, application_name, queue_name):
+    def truncate(consistency, application_name, queue_name):
         """Remove all contents of the queue
 
         :param consistency: Desired consistency of the truncate operation
@@ -183,7 +183,7 @@ class MessageQueueBackend(Interface):
 
         """
 
-    def delete(self, consistency, application_name, queue_name, *ids):
+    def delete(consistency, application_name, queue_name, *ids):
         """Delete all the given message ids from the queue
 
         :param consistency: Desired consistency of the delete operation
@@ -196,7 +196,7 @@ class MessageQueueBackend(Interface):
 
         """
 
-    def count(self, consistency, application_name, queue_name):
+    def count(consistency, application_name, queue_name):
         """Returns the amount of messages in the queue
 
         :param consistency: Desired consistency of the read operation
@@ -217,11 +217,11 @@ class MetadataBackend(Interface):
     allocated for each application.
 
     """
-    def __init__(self, username=None, password=None, database='MetaData',
+    def __init__(username=None, password=None, database='MetaData',
                  host='localhost'):
         """Initialize the backend"""
 
-    def register_queue(self, application_name, queue_name, **metadata):
+    def register_queue(application_name, queue_name, **metadata):
         """Register a queue for the given application
 
         Registers a queue for the application and when it was
@@ -239,7 +239,7 @@ class MetadataBackend(Interface):
 
         """
 
-    def remove_queue(self, application_name, queue_name):
+    def remove_queue(application_name, queue_name):
         """Remove a queue registration for the given application
 
         :param application_name: Name of the application
@@ -250,7 +250,7 @@ class MetadataBackend(Interface):
 
         """
 
-    def queue_list(self, application_name, limit=100, offset=None):
+    def queue_list(application_name, limit=100, offset=None):
         """Return a list of queues registered for the application
 
         :param application_name: Name of the application
@@ -262,7 +262,7 @@ class MetadataBackend(Interface):
 
         """
 
-    def queue_information(self, application_name, queue_names):
+    def queue_information(application_name, queue_names):
         """Return information regarding the queue for the application
 
         This is a mix of basic queue information as well as the
