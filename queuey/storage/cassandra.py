@@ -107,10 +107,6 @@ class CassandraQueueBackend(object):
         cl = self.cl or self._get_cl(consistency)
         delay = self._get_delay(consistency)
 
-        if isinstance(start_at, str):
-            # Assume its a hex, transform to a datetime
-            start_at = uuid.UUID(hex=start_at)
-
         kwargs = {'read_consistency_level': cl}
         if order == 'descending':
             kwargs['column_reversed'] = True
@@ -119,6 +115,10 @@ class CassandraQueueBackend(object):
             kwargs['column_count'] = limit
 
         if start_at:
+            if isinstance(start_at, str):
+                # Assume its a hex, transform to a datetime
+                start_at = uuid.UUID(hex=start_at)
+
             kwargs['column_start'] = start_at
 
         queue_names = ['%s:%s' % (application_name, x) for x in queue_names]
@@ -289,6 +289,7 @@ class CassandraMetadata(object):
                               write_consistency_level=cl)
         self.metric_fam.add(application_name, column='queue_count', value=1,
                             write_consistency_level=cl)
+        return True
 
     def remove_queue(self, application_name, queue_name):
         """Remove a queue"""
