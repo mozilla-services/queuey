@@ -86,7 +86,8 @@ the system.
 In addition, you'll need to start Cassandra (See: Running the Cassandra Server)
 and create the schema::
 
-    bin/cassandra/bin/cassandra-cli -host localhost --file etc/cassandra/schema.txt
+    bin/cassandra/bin/cassandra-cli -host localhost --file etc/cassandra/message_schema.txt
+    bin/cassandra/bin/cassandra-cli -host localhost --file etc/cassandra/metadata_schema.txt
 
 Running
 =======
