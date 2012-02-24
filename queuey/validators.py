@@ -1,6 +1,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
+import random
 import re
 import uuid
 
@@ -19,8 +20,14 @@ def default_queuename(node, kw):
 
 
 @colander.deferred
+def default_queue_partition(node, kw):
+    max_partition = kw['max_partition']
+    return random.randint(1, max_partition)
+
+
+@colander.deferred
 def max_queue_partition(node, kw):
-    max_partition = kw.get('max_partition', 200)
+    max_partition = kw['max_partition']
     return colander.Range(1, max_partition)
 
 _partition_node = colander.SchemaNode(colander.Int(), missing=1,
@@ -94,8 +101,10 @@ class QueueList(colander.MappingSchema):
 
 
 class Message(colander.MappingSchema):
-    body = colander.SchemaNode(colander.String())
-    partition = colander.SchemaNode(colander.Int(), missing=None,
+    body = colander.SchemaNode(colander.String(),
+                               validator=colander.Length(min=1))
+    partition = colander.SchemaNode(colander.Int(),
+                                    missing=default_queue_partition,
                                     validator=max_queue_partition)
     ttl = colander.SchemaNode(colander.Int(), missing=60 * 60 * 24 * 3,
                               validator=colander.Range(1, 60 * 60 * 24 * 3))

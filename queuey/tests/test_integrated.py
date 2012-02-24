@@ -224,17 +224,6 @@ class TestQueueyApp(unittest.TestCase):
         result = json.loads(resp.body)
         eq_(1, len(result['messages']))
 
-    def test_bad_ttl(self):
-        app, queue_name = self._make_app_queue()
-        h = auth_header.copy()
-        h['X-TTL'] = 'fred'
-        resp = app.post('/v1/queuey/' + queue_name,
-                'Hello there!', headers=h,
-                status=400)
-        result = json.loads(resp.body)
-        eq_('error', result['status'])
-        eq_(u'Invalid X-TTL header.', result['error_msg']['InvalidParameter'])
-
     def test_bad_partition(self):
         app, queue_name = self._make_app_queue()
         h = auth_header.copy()
@@ -244,7 +233,7 @@ class TestQueueyApp(unittest.TestCase):
                 status=400)
         result = json.loads(resp.body)
         eq_('error', result['status'])
-        eq_(u'Invalid X-Partition header.', result['error_msg']['InvalidParameter'])
+        eq_('"fred" is not a number', result['error_msg']['partition'])
 
     def test_no_body(self):
         app, queue_name = self._make_app_queue()
@@ -253,7 +242,7 @@ class TestQueueyApp(unittest.TestCase):
                 status=400)
         result = json.loads(resp.body)
         eq_('error', result['status'])
-        eq_(u'No request body found.', result['error_msg']['InvalidParameter'])
+        eq_(u'Required', result['error_msg']['body'])
 
     def test_invalid_partition(self):
         app, queue_name = self._make_app_queue()
@@ -263,7 +252,7 @@ class TestQueueyApp(unittest.TestCase):
                         status=400)
         result = json.loads(resp.body)
         eq_('error', result['status'])
-        eq_(u'Partition is out of bounds.', result['error_msg']['InvalidParameter'])
+        eq_("4 is greater than maximum value 1", result['error_msg']['partition'])
 
         # Dump a message in a cluster with a bad partition
         msgs = {

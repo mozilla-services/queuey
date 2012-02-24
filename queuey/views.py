@@ -1,8 +1,6 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
-import random
-
 from pyramid.view import view_config
 import simplejson
 
@@ -88,12 +86,6 @@ def new_messages(context, request):
         raise InvalidParameter("Unable to properly deserialize JSON body.")
     schema = validators.MessageList().bind(max_partition=context.partitions)
     msgs = schema.deserialize(msgs)
-
-    # Assign partitions
-    for msg in msgs:
-        if not msg['partition']:
-            msg['partition'] = random.randint(1, context.partitions)
-
     return {
         'status': 'ok',
         'messages': context.push_batch(msgs)
@@ -104,28 +96,11 @@ def new_messages(context, request):
              permission='create')
 def new_message(context, request):
     request.response.status = 201
-    if not request.body:
-        raise InvalidParameter("No request body found.")
-
-    msg = {'body': request.body}
-    if 'X-Partition' in request.headers:
-        try:
-            msg['partition'] = int(request.headers['X-Partition'])
-        except (ValueError, TypeError):
-            raise InvalidParameter("Invalid X-Partition header.")
-        if msg['partition'] > context.partitions:
-            raise InvalidParameter("Partition is out of bounds.")
-    else:
-        msg['partition'] = random.randint(1, context.partitions)
-
-    if 'X-TTL' in request.headers:
-        try:
-            msg['ttl'] = int(request.headers['X-TTL'])
-        except (ValueError, TypeError):
-            raise InvalidParameter("Invalid X-TTL header.")
-    else:
-        msg['ttl'] = 60 * 60 * 24 * 3
-
+    msg = {'body': request.body,
+           'ttl': request.headers.get('X-TTL'),
+           'partition': request.headers.get('X-Partition')}
+    schema = validators.Message().bind(max_partition=context.partitions)
+    msg = schema.deserialize(msg)
     return {
         'status': 'ok',
         'messages': context.push_batch([msg])
