@@ -17,6 +17,12 @@ def default_queuename(node, kw):
         queue_name = uuid.uuid4().hex
     return queue_name
 
+
+@colander.deferred
+def max_queue_partition(node, kw):
+    max_partition = kw.get('max_partition', 200)
+    return colander.Range(1, max_partition)
+
 _partition_node = colander.SchemaNode(colander.Int(), missing=1,
                                       validator=colander.Range(1, 200))
 _queuename_node = colander.SchemaNode(
@@ -90,7 +96,7 @@ class QueueList(colander.MappingSchema):
 class Message(colander.MappingSchema):
     body = colander.SchemaNode(colander.String())
     partition = colander.SchemaNode(colander.Int(), missing=None,
-                                    validator=colander.Range(1, 200))
+                                    validator=max_queue_partition)
     ttl = colander.SchemaNode(colander.Int(), missing=60 * 60 * 24 * 3,
                               validator=colander.Range(1, 60 * 60 * 24 * 3))
 

@@ -255,6 +255,32 @@ class TestQueueyApp(unittest.TestCase):
         eq_('error', result['status'])
         eq_(u'No request body found.', result['error_msg']['InvalidParameter'])
 
+    def test_invalid_partition(self):
+        app, queue_name = self._make_app_queue()
+        p2 = auth_header.copy()
+        p2['X-Partition'] = '4'
+        resp = app.post('/v1/queuey/' + queue_name, "Hi there", headers=p2,
+                        status=400)
+        result = json.loads(resp.body)
+        eq_('error', result['status'])
+        eq_(u'Partition is out of bounds.', result['error_msg']['InvalidParameter'])
+
+        # Dump a message in a cluster with a bad partition
+        msgs = {
+            'messages': [
+                {'body': 'Hello msg 1'},
+                {'body': 'Hello msg 2', 'partition': 4}
+            ]
+        }
+        msgs = json.dumps(msgs)
+        json_header = {'Content-Type': 'application/json'}
+        json_header.update(auth_header)
+        resp = app.post('/v1/queuey/' + queue_name, msgs, headers=json_header,
+                        status=400)
+        result = json.loads(resp.body)
+        eq_('error', result['status'])
+        eq_("4 is greater than maximum value 1", result['error_msg']['1.partition'])
+
     def test_no_queuename(self):
         app, queue_name = self._make_app_queue()
         resp = app.post('/v1/queuey/' + queue_name + 'blip',

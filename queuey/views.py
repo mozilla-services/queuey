@@ -86,7 +86,8 @@ def new_messages(context, request):
     except:
         # A bare except like this is horrible, but we need to toss this right
         raise InvalidParameter("Unable to properly deserialize JSON body.")
-    msgs = validators.MessageList().deserialize(msgs)
+    schema = validators.MessageList().bind(max_partition=context.partitions)
+    msgs = schema.deserialize(msgs)
 
     # Assign partitions
     for msg in msgs:
@@ -112,6 +113,8 @@ def new_message(context, request):
             msg['partition'] = int(request.headers['X-Partition'])
         except (ValueError, TypeError):
             raise InvalidParameter("Invalid X-Partition header.")
+        if msg['partition'] > context.partitions:
+            raise InvalidParameter("Partition is out of bounds.")
     else:
         msg['partition'] = random.randint(1, context.partitions)
 
