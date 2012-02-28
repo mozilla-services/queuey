@@ -10,6 +10,7 @@ Reference material includes documentation for the `queuey` RESTful API.
 .. toctree::
    :maxdepth: 1
 
+   installation
    api
    Changelog <changelog>
 
