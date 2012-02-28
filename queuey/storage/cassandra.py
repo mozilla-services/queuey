@@ -15,6 +15,7 @@ from queuey.storage import MetadataBackend
 from queuey.storage import StorageUnavailable
 
 ONE = pycassa.ConsistencyLevel.ONE
+QUORUM = pycassa.ConsistencyLevel.QUORUM
 LOCAL_QUORUM = pycassa.ConsistencyLevel.LOCAL_QUORUM
 EACH_QUORUM = pycassa.ConsistencyLevel.EACH_QUORUM
 
@@ -60,7 +61,7 @@ class CassandraQueueBackend(object):
     implements(MessageQueueBackend)
 
     def __init__(self, username=None, password=None, database='MessageStore',
-                 host='localhost', base_delay=None):
+                 host='localhost', base_delay=None, multi_dc=False):
         """Create a Cassandra backend for the Message Queue
 
         :param host: Hostname, accepts either an IP, hostname, hostname:port,
@@ -76,11 +77,14 @@ class CassandraQueueBackend(object):
         self.meta_fam = pycassa.ColumnFamily(pool, 'MessageMetadata')
         self.delay = int(base_delay) if base_delay else 0
         self.cl = ONE if len(hosts) < 2 else None
+        self.multi_dc = multi_dc
 
     def _get_cl(self, consistency):
         """Return the consistency operation to use"""
         if consistency == 'weak':
             return ONE
+        elif self.multi_dc == False:
+            return QUORUM
         elif consistency == 'very_strong':
             return EACH_QUORUM
         else:
@@ -252,7 +256,7 @@ class CassandraMetadata(object):
     implements(MetadataBackend)
 
     def __init__(self, username=None, password=None, database='MetadataStore',
-                 host='localhost'):
+                 host='localhost', multi_dc=False):
         """Create a Cassandra backend for the Message Queue
 
         :param host: Hostname, accepts either an IP, hostname, hostname:port,
@@ -267,11 +271,12 @@ class CassandraMetadata(object):
         self.metric_fam = pycassa.ColumnFamily(pool, 'ApplicationQueueData')
         self.queue_fam = pycassa.ColumnFamily(pool, 'Queues')
         self.cl = ONE if len(hosts) < 2 else None
+        self.multi_dc = multi_dc
 
     def register_queue(self, application_name, queue_name, **metadata):
         """Register a queue, optionally with metadata"""
         # Determine if its registered already
-        cl = self.cl or LOCAL_QUORUM
+        cl = self.cl or LOCAL_QUORUM if self.multi_dc else QUORUM
         queue_name = '%s:%s' % (application_name, queue_name)
         try:
             self.queue_fam.get(queue_name)
@@ -293,7 +298,7 @@ class CassandraMetadata(object):
 
     def remove_queue(self, application_name, queue_name):
         """Remove a queue"""
-        cl = self.cl or LOCAL_QUORUM
+        cl = self.cl or LOCAL_QUORUM if self.multi_dc else QUORUM
         queue_name = '%s:%s' % (application_name, queue_name)
         try:
             self.queue_fam.get(key=queue_name,
@@ -308,7 +313,7 @@ class CassandraMetadata(object):
 
     def queue_list(self, application_name, limit=100, offset=None):
         """Return list of queues"""
-        cl = self.cl or LOCAL_QUORUM
+        cl = self.cl or LOCAL_QUORUM if self.multi_dc else QUORUM
         app_expr = create_index_expression('application', application_name)
         if offset:
             offset = '%s:%s' % (application_name, offset)
@@ -324,7 +329,7 @@ class CassandraMetadata(object):
 
     def queue_information(self, application_name, queue_names):
         """Return information on a registered queue"""
-        cl = self.cl or LOCAL_QUORUM
+        cl = self.cl or LOCAL_QUORUM if self.multi_dc else QUORUM
         if not isinstance(queue_names, list):
             raise Exception("Queue names must be a list.")
         queue_names = ['%s:%s' % (application_name, queue_name) for

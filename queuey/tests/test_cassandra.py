@@ -32,6 +32,14 @@ class TestCassandraStore(unittest.TestCase):
         backend = self._makeOne()
         backend.cl = None
         eq_(ConsistencyLevel.ONE, backend._get_cl('weak'))
+        eq_(ConsistencyLevel.QUORUM, backend._get_cl('very_strong'))
+        eq_(ConsistencyLevel.QUORUM, backend._get_cl('medium'))
+
+    def test_multidc_cl(self):
+        backend = self._makeOne()
+        backend.cl = None
+        backend.multi_dc = True
+        eq_(ConsistencyLevel.ONE, backend._get_cl('weak'))
         eq_(ConsistencyLevel.EACH_QUORUM, backend._get_cl('very_strong'))
         eq_(ConsistencyLevel.LOCAL_QUORUM, backend._get_cl('medium'))
 

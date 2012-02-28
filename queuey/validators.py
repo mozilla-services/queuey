@@ -30,11 +30,6 @@ def max_queue_partition(node, kw):
     max_partition = kw['max_partition']
     return colander.Range(1, max_partition)
 
-_partition_node = colander.SchemaNode(colander.Int(), missing=1,
-                                      validator=colander.Range(1, 200))
-_queuename_node = colander.SchemaNode(
-    colander.String(), missing=default_queuename)
-
 
 class CommaList(object):
     def deserialize(self, node, cstruct):
@@ -82,8 +77,10 @@ class UpdateQueue(colander.MappingSchema):
 
 
 class NewQueue(colander.MappingSchema):
-    partitions = _partition_node
-    queue_name = _queuename_node
+    partitions = colander.SchemaNode(colander.Int(), missing=1,
+                                     validator=colander.Range(1, 200))
+    queue_name = colander.SchemaNode(colander.String(),
+                                     missing=default_queuename)
     type = colander.SchemaNode(colander.String(), missing='user',
                                validator=colander.OneOf(['public', 'user']))
     consistency = colander.SchemaNode(
