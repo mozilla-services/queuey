@@ -38,7 +38,8 @@ def wrap_func(func):
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except (pycassa.UnavailableException, pycassa.TimedOutException):
+        except (pycassa.UnavailableException, pycassa.TimedOutException,
+                pycassa.MaximumRetryException):
             raise StorageUnavailable("Unable to contact storage pool")
     for attr in "__module__", "__name__", "__doc__":
         setattr(wrapper, attr, getattr(func, attr))

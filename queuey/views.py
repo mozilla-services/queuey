@@ -24,12 +24,18 @@ class InvalidParameter(Exception):
 @view_config(context='queuey.resources.InvalidQueueName', renderer='json')
 @view_config(context='queuey.resources.InvalidUpdate', renderer='json')
 @view_config(context='queuey.resources.InvalidMessageID', renderer='json')
+@view_config(context='queuey.storage.StorageUnavailable', renderer='json')
 def bad_params(context, request):
     exc = request.exception
     cls_name = exc.__class__.__name__
     if cls_name == 'Invalid':
         errors = exc.asdict()
         request.response.status = 400
+    elif cls_name == 'StorageUnavailable':
+        request.response.status = 500
+        errors = {'storage': 'Back-end storage unavailable. If this is a '
+                             'queue request that includes counts, try '
+                             'ommitting the count.'}
     else:
         request.response.status = getattr(exc, 'status', 401)
         errors = {cls_name: str(exc)}

@@ -27,7 +27,7 @@ def configure_from_settings(object_name, settings):
     return klass(**config)
 
 
-class StorageUnavailable(BaseException):
+class StorageUnavailable(Exception):
     """Raised when the storage backend is unavailable"""
 
 
