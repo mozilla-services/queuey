@@ -54,4 +54,7 @@ def main(global_config, **settings):
     config.include("mozsvc")
 
     config.scan('queuey.views')
+
+    # Replace with ujson
+    config.add_renderer('json', 'queuey.views.UJSONRendererFactory')
     return config.make_wsgi_app()

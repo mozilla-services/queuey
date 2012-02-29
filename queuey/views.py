@@ -3,6 +3,7 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 from pyramid.view import view_config
 import simplejson
+import ujson
 
 from queuey import validators
 
@@ -14,6 +15,14 @@ from queuey.resources import MessageBatch
 class InvalidParameter(Exception):
     """Raised in views to flag a bad parameter"""
     status = 400
+
+
+class UJSONRendererFactory:
+    def __init__(self, info):
+        pass
+
+    def __call__(self, value, system):
+        return ujson.dumps(value)
 
 
 # Our invalid schema catch-all

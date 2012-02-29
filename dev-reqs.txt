@@ -28,6 +28,7 @@ zope.deprecation==3.5.0
 zope.event==3.5.1
 zope.interface==3.8.0
 colander==0.9.6
+ujson==1.18
 
 -e git://github.com/mozilla-services/mozservices.git#egg=mozsvc
 -e git://github.com/mozilla-services/pyramid_ipauth.git#egg=pyramid_ipauth
