@@ -105,7 +105,7 @@ class Application(object):
             if include_count:
                 total = 0
                 for num in range(queue_data[index]['partitions']):
-                    qn = '%s-%s' % (queue_name, num + 1)
+                    qn = '%s:%s' % (queue_name, num + 1)
                     total += self.storage.count('weak', self.application_name,
                                                 qn)
                 qd['count'] = total
