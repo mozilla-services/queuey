@@ -5,6 +5,27 @@ import inspect
 import uuid
 import time
 
+
+def patch_queue():
+    """Replace the standard :mod:`Queue` module to make it greenlet-based."""
+    from gevent import queue as green_queue
+    Queue = __import__('Queue')
+    if Queue.Queue is not green_queue.Queue:
+        Queue.Queue = green_queue.Queue
+        Queue.Full = green_queue.Full
+        Queue.Empty = green_queue.Empty
+        if hasattr(Queue, 'LifoQueue'):
+            Queue.LifoQueue = green_queue.LifoQueue
+        if hasattr(Queue, 'PriorityQueue'):
+            Queue.PriorityQueue = green_queue.PriorityQueue
+
+
+try:
+    import gevent
+    patch_queue()
+except ImportError:
+    pass
+
 import pycassa
 from pycassa.index import create_index_expression
 from pycassa.index import create_index_clause
