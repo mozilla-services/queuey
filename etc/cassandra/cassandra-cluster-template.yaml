@@ -1,0 +1,115 @@
+## SET THESE AS APPROPRIATE
+cluster_name: 'NAME OF CLUSTER'
+initial_token: 0
+listen_address: IP.ADDRESS.HERE
+rpc_address: IP.ADDRESS.HERE
+
+seed_provider:
+    - class_name: org.apache.cassandra.locator.SimpleSeedProvider
+      parameters:
+      - seeds: "IP.ADDRESSES.HERE,LIKE.SO."
+
+# Cassandra directories
+data_file_directories:
+    - cassandra/data
+commitlog_directory: cassandra/commitlog
+saved_caches_directory: cassandra/saved_caches
+
+# For workloads with more data than can fit in memory, Cassandra's
+# bottleneck will be reads that need to fetch data from
+# disk. "concurrent_reads" should be set to (16 * number_of_drives) in
+# order to allow the operations to enqueue low enough in the stack
+# that the OS and drives can reorder them.
+#
+# On the other hand, since writes are almost never IO bound, the ideal
+# number of "concurrent_writes" is dependent on the number of cores in
+# your system; (8 * number_of_cores) is a good rule of thumb.
+concurrent_reads: 32
+concurrent_writes: 32
+
+
+## TUNE IF NEEDED
+# Default cluster config
+hinted_handoff_enabled: false
+authenticator: org.apache.cassandra.auth.AllowAllAuthenticator
+authority: org.apache.cassandra.auth.AllowAllAuthority
+partitioner: org.apache.cassandra.dht.RandomPartitioner
+commitlog_sync: periodic
+commitlog_sync_period_in_ms: 10000
+flush_largest_memtables_at: 0.75
+reduce_cache_sizes_at: 0.85
+reduce_cache_capacity_to: 0.6
+memtable_flush_queue_size: 4
+sliced_buffer_size_in_kb: 64
+storage_port: 7000
+
+rpc_port: 9160
+rpc_keepalive: true
+rpc_server_type: hsha
+rpc_timeout_in_ms: 10000
+
+thrift_framed_transport_size_in_mb: 15
+thrift_max_message_length_in_mb: 16
+
+incremental_backups: false
+snapshot_before_compaction: false
+column_index_size_in_kb: 64
+in_memory_compaction_limit_in_mb: 64
+
+multithreaded_compaction: false
+compaction_throughput_mb_per_sec: 16
+compaction_preheat_key_cache: true
+
+endpoint_snitch: org.apache.cassandra.locator.SimpleSnitch
+dynamic_snitch_update_interval_in_ms: 100 
+dynamic_snitch_reset_interval_in_ms: 600000
+dynamic_snitch_badness_threshold: 0.1
+
+# request_scheduler -- Set this to a class that implements
+# RequestScheduler, which will schedule incoming client requests
+# according to the specific policy. This is useful for multi-tenancy
+# with a single Cassandra cluster.
+# NOTE: This is specifically for requests from the client and does
+# not affect inter node communication.
+# org.apache.cassandra.scheduler.NoScheduler - No scheduling takes place
+# org.apache.cassandra.scheduler.RoundRobinScheduler - Round robin of
+# client requests to a node with a separate queue for each
+# request_scheduler_id. The scheduler is further customized by
+# request_scheduler_options as described below.
+request_scheduler: org.apache.cassandra.scheduler.NoScheduler
+
+# Scheduler Options vary based on the type of scheduler
+# NoScheduler - Has no options
+# RoundRobin
+#  - throttle_limit -- The throttle_limit is the number of in-flight
+#                      requests per client.  Requests beyond 
+#                      that limit are queued up until
+#                      running requests can complete.
+#                      The value of 80 here is twice the number of
+#                      concurrent_reads + concurrent_writes.
+#  - default_weight -- default_weight is optional and allows for
+#                      overriding the default which is 1.
+#  - weights -- Weights are optional and will default to 1 or the
+#               overridden default_weight. The weight translates into how
+#               many requests are handled during each turn of the
+#               RoundRobin, based on the scheduler id.
+#
+# request_scheduler_options:
+#    throttle_limit: 80
+#    default_weight: 5
+#    weights:
+#      Keyspace1: 1
+#      Keyspace2: 5
+
+# request_scheduler_id -- An identifer based on which to perform
+# the request scheduling. Currently the only valid option is keyspace.
+# request_scheduler_id: keyspace
+
+index_interval: 128
+
+encryption_options:
+    internode_encryption: none
+    keystore: conf/.keystore
+    keystore_password: cassandra
+    truststore: conf/.truststore
+    truststore_password: cassandra
