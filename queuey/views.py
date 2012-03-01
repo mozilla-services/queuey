@@ -25,14 +25,14 @@ class UJSONRendererFactory:
 
 
 # Our invalid schema catch-all
-@view_config(context=InvalidParameter, renderer='json')
-@view_config(context='colander.Invalid', renderer='json')
-@view_config(context='queuey.security.InvalidBrowserID', renderer='json')
-@view_config(context='queuey.security.InvalidApplicationKey', renderer='json')
-@view_config(context='queuey.resources.InvalidQueueName', renderer='json')
-@view_config(context='queuey.resources.InvalidUpdate', renderer='json')
-@view_config(context='queuey.resources.InvalidMessageID', renderer='json')
-@view_config(context='queuey.storage.StorageUnavailable', renderer='json')
+@view_config(context=InvalidParameter)
+@view_config(context='colander.Invalid')
+@view_config(context='queuey.security.InvalidBrowserID')
+@view_config(context='queuey.security.InvalidApplicationKey')
+@view_config(context='queuey.resources.InvalidQueueName')
+@view_config(context='queuey.resources.InvalidUpdate')
+@view_config(context='queuey.resources.InvalidMessageID')
+@view_config(context='queuey.storage.StorageUnavailable')
 def bad_params(context, request):
     exc = request.exception
     cls_name = exc.__class__.__name__
@@ -53,7 +53,7 @@ def bad_params(context, request):
     }
 
 
-@view_config(context=Application, request_method='POST', renderer='json',
+@view_config(context=Application, request_method='POST',
              permission='create_queue')
 def create_queue(context, request):
     schema = validators.NewQueue().bind()
@@ -63,7 +63,7 @@ def create_queue(context, request):
     return dict(status='ok', **params)
 
 
-@view_config(context=Application, request_method='GET', renderer='json',
+@view_config(context=Application, request_method='GET',
              permission='view_queues')
 def queue_list(context, request):
     params = validators.QueueList().deserialize(request.GET)
@@ -73,8 +73,7 @@ def queue_list(context, request):
     }
 
 
-@view_config(context=Queue, request_method='PUT', renderer='json',
-             permission='create_queue')
+@view_config(context=Queue, request_method='PUT', permission='create_queue')
 def update_queue(context, request):
     params = validators.UpdateQueue().deserialize(request.POST)
     context.update_metadata(**params)
@@ -88,9 +87,8 @@ def update_queue(context, request):
     )
 
 
-@view_config(context=Queue, request_method='POST',
-             header="Content-Type:application/json", renderer='json',
-             permission='create')
+@view_config(context=Queue, request_method='POST', permission='create',
+             header="Content-Type:application/json")
 def new_messages(context, request):
     request.response.status = 201
     try:
@@ -106,8 +104,7 @@ def new_messages(context, request):
     }
 
 
-@view_config(context=Queue, request_method='POST', renderer='json',
-             permission='create')
+@view_config(context=Queue, request_method='POST', permission='create')
 def new_message(context, request):
     request.response.status = 201
     msg = {'body': request.body,
@@ -121,8 +118,7 @@ def new_message(context, request):
     }
 
 
-@view_config(context=Queue, request_method='GET', renderer='json',
-             permission='view')
+@view_config(context=Queue, request_method='GET', permission='view')
 def get_messages(context, request):
     params = validators.GetMessages().deserialize(request.GET)
     return {
@@ -131,9 +127,8 @@ def get_messages(context, request):
     }
 
 
-@view_config(context=Queue, request_method='DELETE', renderer='json',
-             permission='delete_queue')
-@view_config(context=MessageBatch, request_method='DELETE', renderer='json',
+@view_config(context=Queue, request_method='DELETE', permission='delete_queue')
+@view_config(context=MessageBatch, request_method='DELETE',
              permission='delete')
 def delete(context, request):
     context.delete()

@@ -55,6 +55,6 @@ def main(global_config, **settings):
 
     config.scan('queuey.views')
 
-    # Replace with ujson
-    config.add_renderer('json', 'queuey.views.UJSONRendererFactory')
+    # Replace default renderer with ujson rendering
+    config.add_renderer(None, 'queuey.views.UJSONRendererFactory')
     return config.make_wsgi_app()
