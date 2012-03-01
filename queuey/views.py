@@ -2,7 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 from pyramid.view import view_config
-import simplejson
 import ujson
 
 from queuey import validators
@@ -95,7 +94,7 @@ def update_queue(context, request):
 def new_messages(context, request):
     request.response.status = 201
     try:
-        msgs = simplejson.loads(request.body)['messages']
+        msgs = ujson.loads(request.body)['messages']
     except:
         # A bare except like this is horrible, but we need to toss this right
         raise InvalidParameter("Unable to properly deserialize JSON body.")
