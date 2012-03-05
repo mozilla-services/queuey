@@ -23,7 +23,7 @@ Queuey Assumptions and Features:
 - Millions of queues may be created
 - Message delivery characteristics need to be tweakable based on the
   specific cost-benefit for a Queuey deployment
-- RESTful HTTP API for easy access by a variety of clients, including AJAX
+- HTTP API for easy access by a variety of clients, including AJAX
 - Authentication system to support multiple 'Application' access to Queuey
   with optional Browser-ID client authentication
 - A single deployment may support multiple Applications with varying

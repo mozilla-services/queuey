@@ -5,12 +5,14 @@
 Reference Material
 ==================
 
-Reference material includes documentation for the `queuey` RESTful API.
+Reference material includes documentation for the `queuey` HTTP API.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    installation
+   configuration
+   using
    api
    Changelog <changelog>
 
