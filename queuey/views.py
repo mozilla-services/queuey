@@ -1,6 +1,8 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
+import random
+
 from pyramid.view import view_config
 import ujson
 
@@ -98,6 +100,9 @@ def new_messages(context, request):
         raise InvalidParameter("Unable to properly deserialize JSON body.")
     schema = validators.MessageList().bind(max_partition=context.partitions)
     msgs = schema.deserialize(msgs)
+    for msg in msgs:
+        if not msg['partition']:
+            msg['partition'] = random.randint(1, context.partitions)
     return {
         'status': 'ok',
         'messages': context.push_batch(msgs)
@@ -112,6 +117,8 @@ def new_message(context, request):
            'partition': request.headers.get('X-Partition')}
     schema = validators.Message().bind(max_partition=context.partitions)
     msg = schema.deserialize(msg)
+    if not msg['partition']:
+        msg['partition'] = random.randint(1, context.partitions)
     return {
         'status': 'ok',
         'messages': context.push_batch([msg])
