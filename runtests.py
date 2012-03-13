@@ -34,10 +34,7 @@ def main():
     with supervisor():
         setup(40)
         try:
-            pycassa.ConnectionPool(
-                    keyspace='MessageStore',
-                    server_list=hosts,
-            )
+            pycassa.ConnectionPool(keyspace='MessageStore', server_list=hosts)
         except pycassa.InvalidRequestException as m:
             if 'Keyspace MessageStore does not exist' in m.why:
                 lhost = hosts[0].split(':')[0]
