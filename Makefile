@@ -56,9 +56,9 @@ $(BIN)/pip: $(BIN)/python
 
 lib: $(BIN)/pip
 	@echo "Installing package pre-requisites..."
-	$(INSTALL) -r dev-reqs.txt &> /dev/null
+	$(INSTALL) -r dev-reqs.txt
 	@echo "Running setup.py develop"
-	$(PYTHON) setup.py develop &> /dev/null
+	$(PYTHON) setup.py develop
 
 $(CASSANDRA):
 	@echo "Installing Cassandra"
