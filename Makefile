@@ -56,20 +56,20 @@ $(BIN)/pip: $(BIN)/python
 
 lib: $(BIN)/pip
 	@echo "Installing package pre-requisites..."
-	$(INSTALL) -r dev-reqs.txt &> /dev/null
+	$(INSTALL) -r dev-reqs.txt
 	@echo "Running setup.py develop"
-	$(PYTHON) setup.py develop &> /dev/null
+	$(PYTHON) setup.py develop
 
 $(CASSANDRA):
 	@echo "Installing Cassandra"
 	mkdir -p bin
 	cd bin && \
-	curl --silent http://downloads.datastax.com/community/dsc-cassandra-1.0.7-bin.tar.gz | tar -zvx &> /dev/null
+	curl --silent http://downloads.datastax.com/community/dsc-cassandra-1.0.7-bin.tar.gz | tar -zvx
 	mv bin/dsc-cassandra-1.0.7 bin/cassandra
 	cp etc/cassandra/cassandra.yaml bin/cassandra/conf/cassandra.yaml
 	cp etc/cassandra/log4j-server.properties bin/cassandra/conf/log4j-server.properties
 	cd bin/cassandra/lib && \
-	curl -O http://java.net/projects/jna/sources/svn/content/trunk/jnalib/dist/jna.jar &> /dev/null
+	curl -O http://java.net/projects/jna/sources/svn/content/trunk/jnalib/dist/jna.jar
 	@echo "Finished installing Cassandra"
 
 cassandra: $(CASSANDRA)
