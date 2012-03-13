@@ -11,8 +11,8 @@ notifications:
     - ben@groovie.org
 
 install:
-    - deactivate
-    - make -s build
-    - make -s cassandra
+    - make --version
+    - make build
+    - make cassandra
 
 script: make test
