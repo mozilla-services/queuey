@@ -31,3 +31,4 @@ zope.event==3.5.1
 zope.interface==3.8.0
 colander==0.9.6
 ujson==1.18
+supervisor==3.0a12
