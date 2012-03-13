@@ -12,6 +12,6 @@ notifications:
 
 install:
     - make build >/dev/null 2>&1
-    - make cassandra >/dev/null 2>&1
+    - make cassandra
 
 script: make test
