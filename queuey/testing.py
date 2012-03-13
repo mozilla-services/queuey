@@ -9,13 +9,13 @@ import xmlrpclib
 processes = {}
 
 
-def ensure_process(name):
+def ensure_process(name, timeout=10):
     srpc = processes['supervisor']
     if srpc.getProcessInfo(name)['statename'] in ('STOPPED', 'EXITED'):
         print(u'Starting %s!\n' % name)
         srpc.startProcess(name)
     # wait for startup to succeed
-    for i in range(1, 11):
+    for i in range(1, timeout):
         state = srpc.getProcessInfo(name)['statename']
         if state == 'RUNNING':
             break
@@ -31,7 +31,7 @@ def setup_supervisor():
         'http://127.0.0.1:4999').supervisor
 
 
-def setup():
+def setup(timeout=10):
     """Shared one-time test setup, called from tests/__init__.py"""
     setup_supervisor()
-    ensure_process('cassandra')
+    ensure_process('cassandra', timeout)
