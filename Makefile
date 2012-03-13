@@ -80,7 +80,6 @@ clean-cassandra:
 clean:	clean-env
 
 build: lib
-	$(INSTALL) MoPyTools
 	$(PYTHON) setup.py develop
 	$(BUILDAPP) -c $(CHANNEL) $(PYPIOPTIONS) $(DEPS)
 
