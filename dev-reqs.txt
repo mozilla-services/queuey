@@ -39,5 +39,3 @@ zope.component==3.12.0
 zope.deprecation==3.5.0
 zope.event==3.5.1
 zope.interface==3.8.0
-
--e git+git@github.com:mozilla-services/queuey.git@6e51f1b8ad0d980edfa47e52198a45931c551a26#egg=queuey-dev
