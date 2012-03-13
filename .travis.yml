@@ -11,6 +11,7 @@ notifications:
     - ben@groovie.org
 
 install:
+    - bash
     - make -s build
     - make -s cassandra
 

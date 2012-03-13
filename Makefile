@@ -46,7 +46,7 @@ BUILD_DIRS = bin build deps include lib lib64
 
 
 .PHONY: all build test build_rpms mach
-.SILENT: lib python pip
+.SILENT: lib python pip $(CASSANDRA) cassandra
 
 all:	build
 
@@ -56,22 +56,22 @@ $(BIN)/python:
 $(BIN)/pip: $(BIN)/python
 
 lib: $(BIN)/pip
-	@echo "Installing package pre-requisites..."
-	$(INSTALL) -r dev-reqs.txt
-	@echo "Running setup.py develop"
-	$(PYTHON) setup.py develop
+	echo "Installing package pre-requisites..."
+	$(INSTALL) -r dev-reqs.txt &>/dev/null
+	echo "Running setup.py develop"
+	$(PYTHON) setup.py develop &>/dev/null
 
 $(CASSANDRA):
-	@echo "Installing Cassandra"
+	echo "Installing Cassandra"
 	mkdir -p bin
 	cd bin && \
-	curl --silent http://downloads.datastax.com/community/dsc-cassandra-1.0.7-bin.tar.gz | tar -zvx
+	curl --silent http://downloads.datastax.com/community/dsc-cassandra-1.0.7-bin.tar.gz | tar -zvx &>/dev/null
 	mv bin/dsc-cassandra-1.0.7 bin/cassandra
 	cp etc/cassandra/cassandra.yaml bin/cassandra/conf/cassandra.yaml
 	cp etc/cassandra/log4j-server.properties bin/cassandra/conf/log4j-server.properties
 	cd bin/cassandra/lib && \
-	curl -O http://java.net/projects/jna/sources/svn/content/trunk/jnalib/dist/jna.jar
-	@echo "Finished installing Cassandra"
+	curl -O http://java.net/projects/jna/sources/svn/content/trunk/jnalib/dist/jna.jar &>/dev/null
+	echo "Finished installing Cassandra"
 
 cassandra: $(CASSANDRA)
 
