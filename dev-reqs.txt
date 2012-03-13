@@ -1,3 +1,4 @@
+MoPyTools==2.8
 cef == 0.3
 Distutils2==1.0a3
 Mako==0.6.2
