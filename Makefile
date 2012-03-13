@@ -51,15 +51,15 @@ BUILD_DIRS = bin build deps include lib lib64
 all:	build
 
 $(BIN)/python:
-	python $(SW)/virtualenv.py --no-site-packages --distribute .
+	python $(SW)/virtualenv.py --no-site-packages --distribute . >/dev/null 2>&1
 
 $(BIN)/pip: $(BIN)/python
 
 lib: $(BIN)/pip
 	echo "Installing package pre-requisites..."
-	$(INSTALL) -r dev-reqs.txt
+	$(INSTALL) -r dev-reqs.txt >/dev/null 2>&1
 	echo "Running setup.py develop"
-	$(PYTHON) setup.py develop
+	$(PYTHON) setup.py develop >/dev/null 2>&1
 
 $(CASSANDRA):
 	echo "Installing Cassandra"
