@@ -11,6 +11,7 @@ argparse==1.2.1
 distribute==0.6.24
 flake8==1.0
 gunicorn==0.13.4
+mozsvc==0.1
 mock
 nose==1.1.2
 ordereddict==1.1
@@ -29,7 +30,3 @@ zope.event==3.5.1
 zope.interface==3.8.0
 colander==0.9.6
 ujson==1.18
-
--e git://github.com/mozilla-services/mozservices.git#egg=mozsvc
--e git://github.com/mozilla-services/pyramid_ipauth.git#egg=pyramid_ipauth
--e git://github.com/mozilla-services/cornice.git#egg=cornice

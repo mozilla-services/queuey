@@ -39,6 +39,9 @@ setup(
         "Intended Audience :: Developers",
         "Programming Language :: Python",
         "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 2.6",
+        "Programming Language :: Python :: 2.7",
     ],
     keywords="message-queue notifications server messaging queue",
     author="Mozilla Foundation",
@@ -49,7 +52,7 @@ setup(
     test_suite="queuey.tests",
     include_package_data=True,
     zip_safe=False,
-    tests_require=['pkginfo', 'Mock>=0.8rc2', 'nose'],
+    tests_require=['pkginfo', 'Mock>=0.8rc2', 'nose', 'supervisor'],
     install_requires=reqs,
     entry_points="""
         [paste.app_factory]
