@@ -14,13 +14,4 @@ install:
     - make build
     - make cassandra
 
-before_script:
-    - bin/supervisord
-    - sleep 5
-    - bin/cassandra/bin/cassandra-cli -host 127.0.0.1 --file etc/cassandra/message_schema.txt
-    - bin/cassandra/bin/cassandra-cli -host 127.0.0.1 --file etc/cassandra/metadata_schema.txt
-
 script: make test
-
-after_script:
-    - bin/supervisorctl shutdown
