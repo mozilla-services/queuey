@@ -197,6 +197,7 @@ class Queue(object):
             del res['metadata']
             res['partition'] = int(res['queue_name'].split(':')[-1])
             del res['queue_name']
+            res['timestamp'] = repr(res['timestamp'])
         return results
 
     def delete(self):
