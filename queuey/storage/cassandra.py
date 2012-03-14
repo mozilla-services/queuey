@@ -23,7 +23,7 @@ def patch_queue():
 try:
     import gevent
     patch_queue()
-except ImportError:
+except ImportError:  # pragma: nocover
     pass
 
 import pycassa
