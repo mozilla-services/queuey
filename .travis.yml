@@ -9,6 +9,7 @@ branches:
 notifications:
   email:
     - ben@groovie.org
+  irc: "irc.mozilla.org#services-dev"
 
 before_install:
     - sudo apt-get update >/dev/null 2>&1
