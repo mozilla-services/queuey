@@ -16,6 +16,7 @@ before_install:
 
 install:
     - make build
+    - bin/pip install gevent
     - make cassandra
 
 script: make test
