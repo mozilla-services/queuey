@@ -1,5 +1,5 @@
 Chameleon==2.8
-Distutils2==1.0a4
+Distutils2==1.0a3
 Mako==0.6.2
 MarkupSafe==0.15
 MoPyTools==2.9
