@@ -1,5 +1,5 @@
-%define name python26-demoapp
-%define pythonname demoapp
+%define name python26-queuey
+%define pythonname queuey
 %define version 0.2
 %define release 1
 
@@ -19,7 +19,7 @@ Requires: python26 python26-setuptools python26-webob python26-paste python26-pa
 Url: ${url}
 
 %description
-See README
+See README.rst
 
 %prep
 %setup -n %{pythonname}-%{version} -n %{pythonname}-%{version}
