@@ -34,7 +34,7 @@ python2.6 setup.py build
 
 %install
 
-# the config files for Sync apps
+# the config files for Queuey apps
 mkdir -p %{buildroot}%{_sysconfdir}/queuey
 install -m 0644 etc/production.ini %{buildroot}%{_sysconfdir}/queuey/production.ini
 
@@ -62,9 +62,9 @@ chmod 640 %{_localstatedir}/log/queuey.log
 
 %attr(640, nginx, nginx) %ghost %{_localstatedir}/log/queuey.log
 
-%dir %{_sysconfdir}/sync/
+%dir %{_sysconfdir}/queuey/
 
-%config(noreplace) %{_sysconfdir}/sync/*
+%config(noreplace) %{_sysconfdir}/queuey/*
 %config(noreplace) %{_sysconfdir}/nginx/conf.d/queuey.conf
 
 %defattr(-,root,root)
