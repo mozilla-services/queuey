@@ -1,6 +1,6 @@
 %define name python26-queuey
 %define pythonname queuey
-%define version 0.2
+%define version 0.8
 %define release 1
 
 Summary: A Services app
