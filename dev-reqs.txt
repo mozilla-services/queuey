@@ -17,6 +17,7 @@ distribute==0.6.25
 flake8==1.0
 gunicorn==0.14.2
 meld3==0.6.8
+metlog-py==0.8.2
 mock==0.8
 mozsvc==0.1
 nose==1.1.2

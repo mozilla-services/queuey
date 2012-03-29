@@ -11,6 +11,7 @@ cef==0.3
 colander==0.9.7
 gunicorn==0.14.2
 meld3==0.6.8
+metlog-py==0.8.2
 mozsvc==0.1
 ordereddict==1.1
 pycassa==1.5.1
