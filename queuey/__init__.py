@@ -6,6 +6,7 @@ import os
 from pyramid.authorization import ACLAuthorizationPolicy
 from pyramid.config import Configurator
 
+from metlog.config import client_from_dict_config
 from mozsvc.config import Config
 
 from queuey.resources import Root
@@ -40,6 +41,11 @@ def main(global_config, **settings):
         'storage', settings['config'].get_map('storage'))
     config.registry['backend_metadata'] = configure_from_settings(
         'metadata', settings['config'].get_map('metadata'))
+
+    # Load the Metlog Client instance
+    config.registry['metlog_client'] = client_from_dict_config(
+        settings['config'].get_map('metlog')
+    )
 
     # Load the application keys
     app_vals = settings['config'].get_map('application_keys')
