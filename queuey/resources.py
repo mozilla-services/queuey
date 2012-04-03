@@ -120,6 +120,7 @@ class Queue(object):
         self.metadata = request.registry['backend_metadata']
         self.storage = request.registry['backend_storage']
         self.queue_name = queue_name
+        self.metlog = request.registry['metlog_client']
         principles = queue_data.pop('principles', '').split(',')
         self.principles = [x.strip() for x in principles if x]
 
@@ -182,6 +183,8 @@ class Queue(object):
         for i, msg in enumerate(results):
             rl.append({'key': msg[0], 'timestamp': repr(msg[1]),
                        'partition': messages[i]['partition']})
+        self.metlog.incr('%s.new_message' % self.application,
+                         count=len(results))
         return rl
 
     def get_messages(self, since=None, limit=None, order=None, partitions=None):
@@ -198,6 +201,8 @@ class Queue(object):
             res['partition'] = int(res['queue_name'].split(':')[-1])
             del res['queue_name']
             res['timestamp'] = repr(res['timestamp'])
+        self.metlog.incr('%s.get_message' % self.application,
+                         count=len(results))
         return results
 
     def delete(self):
