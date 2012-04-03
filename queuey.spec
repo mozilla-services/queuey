@@ -14,7 +14,7 @@ BuildRoot: %{_tmppath}/%{pythonname}-%{version}-%{release}-buildroot
 Prefix: %{_prefix}
 BuildArch: noarch
 Vendor: Services team <services-dev@mozilla.org>
-Requires: nginx gunicorn pyzmq python26 python26-argparse python26-cef python26-chameleon python26-colander python26-gunicorn python26-mako python26-markupsafe python26-meld3 python26-mozsvc python26-ordereddict python26-paste python26-pastedeploy python26-pastescript python26-pycassa python26-pygments python26-pyramid python26-setuptools python26-repoze.lru python26-simplejson python26-thrift python26-translationstring python26-venusian python26-webob python26-wsgiref python26-zope.component python26-zope.deprecation python26-zope.event python26-zope.interface python26-ujson python26-metlog-py
+Requires: nginx gunicorn pyzmq python26 python26-argparse python26-cef python26-chameleon python26-colander python26-mako python26-markupsafe python26-meld3 python26-mozsvc python26-ordereddict python26-paste python26-pastedeploy python26-pastescript python26-pycassa python26-pygments python26-pyramid python26-setuptools python26-repoze.lru python26-simplejson python26-thrift python26-translationstring python26-venusian python26-webob python26-wsgiref python26-zope.component python26-zope.deprecation python26-zope.event python26-zope.interface python26-ujson python26-metlog-py
 
 Url: ${url}
 
