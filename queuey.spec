@@ -1,7 +1,7 @@
 %define name python26-queuey
 %define pythonname queuey
 %define version 0.8
-%define release 1
+%define release 2
 
 Summary: A Services app
 Name: %{name}
