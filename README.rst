@@ -65,7 +65,7 @@ cd into the directory and run::
 This will do the following:
 
 - Create a virtual python environment 
-- Install required python packages into this environment
+- Install required python packages into this environment 
 
 Cassandra
 ---------
@@ -86,8 +86,8 @@ the system.
 In addition, you'll need to start Cassandra (See: Running the Cassandra Server)
 and create the schema::
 
-    bin/cassandra/bin/cassandra-cli -host localhost --file etc/cassandra/message_schema.txt
-    bin/cassandra/bin/cassandra-cli -host localhost --file etc/cassandra/metadata_schema.txt
+    bin/cassandra/bin/cassandra-cli --host localhost --file etc/cassandra/message_schema.txt
+    bin/cassandra/bin/cassandra-cli --host localhost --file etc/cassandra/metadata_schema.txt
 
 Running
 =======
@@ -109,6 +109,40 @@ To shut it down at any point in the future::
 Running the Queuey Application:
 -------------------------------
 
+It is recommended that you copy the etc/queuey-dev.ini file to /etc/queuey.ini file.
+This will prevent accidental loss of configuration during an update.
+
 ::
 
-	bin/pserve etc/queuey-dev.ini
+	bin/pserve etc/queuey.ini
+
+Troubleshooting:
+----------------
+
+"Upgrading" queuey may require reinitializing the schema. To reinitialize the schema
+
+1. Stop Cassandra
+
+::
+
+   kill -2 `cat cassandra.pid`
+
+2. remove the cassandra directory (not the cassandra binary dir)
+
+::
+
+   rm -rf ./cassandra
+
+3. start cassandra
+
+::
+
+   ./bin/cassandra/bin/cassandra -p cassandra.pid
+
+4. reinitialize cassandra
+
+::
+
+    bin/cassandra/bin/cassandra-cli --host localhost --file etc/cassandra/message_schema.txt
+    bin/cassandra/bin/cassandra-cli --host localhost --file etc/cassandra/metadata_schema.txt
+

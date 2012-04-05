@@ -22,6 +22,8 @@ INSTALL = $(HERE)/bin/pip install
 PIP_DOWNLOAD_CACHE ?= /tmp/pip_cache
 INSTALLOPTIONS = --download-cache $(PIP_DOWNLOAD_CACHE) -U -i $(PYPI)
 
+CASS_SERVER = localhost
+
 ifdef PYPIEXTRAS
 	PYPIOPTIONS += -e $(PYPIEXTRAS)
 	INSTALLOPTIONS += -f $(PYPIEXTRAS)
@@ -80,6 +82,10 @@ clean-env:
 
 clean-cassandra:
 	rm -rf cassandra bin/cassandra
+
+init-cassandra:
+	$(CASSANDRA)-cli --host $(CASS_SERVER) --file etc/cassandra/message_schema.txt 
+	$(CASSANDRA)-cli --host $(CASS_SERVER) --file etc/cassandra/metadata_schema.txt 
 
 clean:	clean-env
 
