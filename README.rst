@@ -8,7 +8,7 @@ Queuey
    :alt: Travis CI build report
    :target: https://secure.travis-ci.org/#!/mozilla-services/queuey
 
-    Wat? Another message queue?
+Wat? Another message queue?
 
 Given the proliferation of message queue's, one could be inclined to believe
 that inventing more is not the answer. Using an existing solution was
