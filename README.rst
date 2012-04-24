@@ -2,6 +2,12 @@
 Queuey
 ======
 
+.. image:: https://secure.travis-ci.org/mozilla-services/queuey.png?branch=master
+   :width: 82px
+   :height: 13px
+   :alt: Travis CI build report
+   :target: https://secure.travis-ci.org/#!/mozilla-services/queuey
+
     Wat? Another message queue?
 
 Given the proliferation of message queue's, one could be inclined to believe
