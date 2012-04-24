@@ -57,19 +57,22 @@ class TestQueueyApp(unittest.TestCase):
         app, queue_name = self._make_app_queue()
 
         # Post a message
-        resp = app.post('/v1/queuey/' + queue_name,
-                        'Hello there!', headers=auth_header)
-        resp = app.post('/v1/queuey/' + queue_name,
+        app.post('/v1/queuey/' + queue_name,
+                 'Hello there!', headers=auth_header)
+        response = app.post('/v1/queuey/' + queue_name,
                         'Hello there 2!', headers=auth_header)
-        result = json.loads(resp.body)
-        resp = app.post('/v1/queuey/' + queue_name,
-                        'Hello there! 3', headers=auth_header)
+        result = json.loads(response.body)
         msg_ts = result['messages'][0]['timestamp']
+
+        app.post('/v1/queuey/' + queue_name,
+                 'Hello there! 3', headers=auth_header)
 
         # Fetch the messages
         resp = app.get('/v1/queuey/' + queue_name, {'since': msg_ts},
                        headers=auth_header)
         result = json.loads(resp.body)
+        if len(result['messages']) < 2:
+                print result
         eq_(2, len(result['messages']))
         msg = result['messages'][0]
         eq_('Hello there 2!', msg['body'])

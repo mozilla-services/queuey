@@ -22,7 +22,6 @@ mock==0.8
 mozsvc==0.1
 nose==1.1.2
 ordereddict==1.1
-pycassa==1.5.1
 pypi2rpm==0.6
 pyramid==1.3
 pyramid-debugtoolbar==1.0
@@ -41,3 +40,4 @@ zope.deprecation==3.5
 zope.event==3.5.1
 zope.interface==3.8
 git+git://github.com/mozilla-services/ultrajson.git
+git+git://github.com/pycassa/pycassa.git
