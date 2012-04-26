@@ -30,7 +30,7 @@ def ensure_process(name, timeout=10):
         for name in os.listdir(vardir):
             if name in ('README.txt', 'supervisor.sock'):
                 continue
-            print("\n\nFILE: %s " % name)
+            print("\n\nFILE: %s" % name)
             with open(os.path.join(vardir, name)) as f:
                 print(f.read())
         raise RuntimeError('%s not running' % name)
