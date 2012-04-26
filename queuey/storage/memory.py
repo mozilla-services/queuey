@@ -85,16 +85,14 @@ class MemoryQueueBackend(object):
                     # we hit a value a value equal to or greater than
                     start = 0
                     msg_comp = (msgs[start].id.time, msgs[start].id.bytes)
-                    while point <= msg_comp:
+                    while point > msg_comp:
                         start += 1
                         msg_comp = (msgs[start].id.time, msgs[start].id.bytes)
-                        print point, msg_comp
             else:
                 if order == -1:
                     start = len(msgs) - 1
                 else:
                     start = 0
-            print start, order
             for msg in msgs[start::order]:
                 obj = {
                     'message_id': msg.id.hex,
