@@ -93,7 +93,11 @@ class MemoryQueueBackend(object):
                     start = len(msgs) - 1
                 else:
                     start = 0
+            count = 0
             for msg in msgs[start::order]:
+                count += 1
+                if limit and count > limit:
+                    break
                 obj = {
                     'message_id': msg.id.hex,
                     'timestamp': (msg.id.time - 0x01b21dd213814000L) / 1e7,
