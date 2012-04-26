@@ -96,8 +96,6 @@ test:
 	$(PYTHON) runtests.py
 
 test-python:
-	TEST_STORAGE_BACKEND=queuey.storage.cassandra.CassandraQueueBackend \
-	TEST_METADATA_BACKEND=queuey.storage.cassandra.CassandraMetadata \
 	$(NOSE) --with-coverage --cover-package=queuey --cover-erase \
 	--cover-inclusive $(APPNAME)
 

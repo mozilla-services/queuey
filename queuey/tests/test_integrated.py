@@ -13,13 +13,15 @@ from nose.tools import eq_
 auth_header = {'Authorization': 'Application f25bfb8fe200475c8a0532a9cbe7651e'}
 
 
-class TestQueueyApp(unittest.TestCase):
+class TestQueueyBaseApp(unittest.TestCase):
+    ini_file = 'test_memory.ini'
+
     def makeOne(self):
         try:
             return self.application
         except AttributeError:
             ini_file = os.path.abspath(
-                os.path.join(os.path.dirname(__file__), 'test.ini'))
+                os.path.join(os.path.dirname(__file__), self.ini_file))
             self.application = application = TestApp(loadapp('config:%s' % ini_file))
             return application
 
@@ -71,8 +73,9 @@ class TestQueueyApp(unittest.TestCase):
         resp = app.get('/v1/queuey/' + queue_name, {'since': msg_ts},
                        headers=auth_header)
         result = json.loads(resp.body)
-        if len(result['messages']) < 2:
-                print result
+        if len(result['messages']) > 2:
+            print msg_ts
+            print result
         eq_(2, len(result['messages']))
         msg = result['messages'][0]
         eq_('Hello there 2!', msg['body'])
@@ -331,3 +334,7 @@ class TestQueueyApp(unittest.TestCase):
         app = self.makeOne()
         resp = app.post('/blah', status=404)
         eq_(404, resp.status_int)
+
+
+class TestCassandraQueueyApp(TestQueueyBaseApp):
+    ini_file = 'test_cassandra.ini'
