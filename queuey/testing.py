@@ -2,11 +2,14 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
-
+import os
 import time
 import xmlrpclib
 
 processes = {}
+
+here = os.path.dirname(__file__)
+maindir = os.path.dirname(here)
 
 
 def ensure_process(name, timeout=10):
@@ -23,8 +26,13 @@ def ensure_process(name, timeout=10):
             print(u'Waiting on %s for %s seconds.' % (name, i * 0.1))
             time.sleep(i * 0.1)
     if srpc.getProcessInfo(name)['statename'] != 'RUNNING':
-        with open('../var/supervisord.log') as f:
-            print(f.read())
+        vardir = os.path.join(maindir, 'var')
+        for name in os.listdir(vardir):
+            if name == 'README.txt':
+                continue
+            print("\n\nFILE: %s" % name)
+            with open(os.path.join(vardir, name)) as f:
+                print(f.read())
         raise RuntimeError('%s not running' % name)
 
 
