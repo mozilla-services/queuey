@@ -23,6 +23,8 @@ def ensure_process(name, timeout=10):
             print(u'Waiting on %s for %s seconds.' % (name, i * 0.1))
             time.sleep(i * 0.1)
     if srpc.getProcessInfo(name)['statename'] != 'RUNNING':
+        with open('../var/supervisord.log') as f:
+            print(f.read())
         raise RuntimeError('%s not running' % name)
 
 
