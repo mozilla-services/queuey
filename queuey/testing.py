@@ -28,7 +28,7 @@ def ensure_process(name, timeout=10):
     if srpc.getProcessInfo(name)['statename'] != 'RUNNING':
         vardir = os.path.join(maindir, 'var')
         for name in os.listdir(vardir):
-            if name == 'README.txt':
+            if name in ('README.txt', 'supervisor.sock'):
                 continue
             print("\n\nFILE: %s" % name)
             with open(os.path.join(vardir, name)) as f:
