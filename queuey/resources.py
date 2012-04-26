@@ -73,7 +73,7 @@ class Application(object):
         if len(name) > 50:
             raise InvalidQueueName("Queue name longer than 50 characters.")
         data = self.metadata.queue_information(self.application_name, [name])
-        if not data:
+        if not data or not data[0]:
             raise InvalidQueueName("Queue of that name was not found.")
         return Queue(self.request, name, data[0])
 
