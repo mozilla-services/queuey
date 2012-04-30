@@ -25,4 +25,3 @@ zope.component==3.12
 zope.deprecation==3.5
 zope.event==3.5.1
 zope.interface==3.8
-git+git://github.com/pycassa/pycassa.git

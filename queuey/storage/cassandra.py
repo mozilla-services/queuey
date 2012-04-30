@@ -13,6 +13,7 @@ from zope.interface import implements
 from queuey.storage import MessageQueueBackend
 from queuey.storage import MetadataBackend
 from queuey.storage import StorageUnavailable
+from queuey.storage.util import convert_time_to_uuid
 
 ONE = pycassa.ConsistencyLevel.ONE
 QUORUM = pycassa.ConsistencyLevel.QUORUM
@@ -193,10 +194,13 @@ class CassandraQueueBackend(object):
         return obj
 
     def push(self, consistency, application_name, queue_name, message,
-             metadata=None, ttl=60 * 60 * 24 * 3):
+             metadata=None, ttl=60 * 60 * 24 * 3, timestamp=None):
         """Push a message onto the queue"""
         cl = self.cl or self._get_cl(consistency)
-        now = uuid.uuid1()
+        if timestamp:
+            now = convert_time_to_uuid(timestamp, randomize=True)
+        else:
+            now = uuid.uuid1()
         queue_name = '%s:%s' % (application_name, queue_name)
         if metadata:
             batch = pycassa.batch.Mutator(self.pool,

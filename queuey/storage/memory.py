@@ -5,11 +5,11 @@ from collections import defaultdict
 import uuid
 import time
 
-from pycassa.util import convert_time_to_uuid
 from zope.interface import implements
 
 from queuey.storage import MessageQueueBackend
 from queuey.storage import MetadataBackend
+from queuey.storage.util import convert_time_to_uuid
 
 # Queue's keyed by applciation_name + queue_name
 # Queues are just a list of Message objects
@@ -25,6 +25,10 @@ class Message(object):
         self.body = body
         self.metadata = metadata
         self.ttl = None
+        self.expiration = None
+        if ttl:
+            now = (self.id.time - 0x01b21dd213814000L) / 1e7
+            self.expiration = now + ttl
 
 
 class Application(object):
@@ -64,6 +68,7 @@ class MemoryQueueBackend(object):
 
         queue_names = ['%s:%s' % (application_name, x) for x in queue_names]
         results = []
+        now = time.time()
         for queue_name in queue_names:
             msgs = message_store[queue_name]
             if not msgs:
@@ -94,7 +99,11 @@ class MemoryQueueBackend(object):
                 else:
                     start = 0
             count = 0
+
             for msg in msgs[start::order]:
+                if msg.expiration and now > msg.expiration:
+                    msgs.remove(msg)
+                    continue
                 count += 1
                 if limit and count > limit:
                     break
@@ -127,8 +136,14 @@ class MemoryQueueBackend(object):
             if msg.id == message_id:
                 found = msg
                 break
+
         if not found:
             return {}
+
+        if found.expiration and time.time() > found.expiration:
+            queue.remove(found)
+            return {}
+
         obj = {
             'message_id': found.id.hex,
             'timestamp': (found.id.time - 0x01b21dd213814000L) / 1e7,
@@ -141,9 +156,13 @@ class MemoryQueueBackend(object):
         return obj
 
     def push(self, consistency, application_name, queue_name, message,
-             metadata=None, ttl=60 * 60 * 24 * 3):
+             metadata=None, ttl=60 * 60 * 24 * 3, timestamp=None):
         """Push a message onto the queue"""
-        msg = Message(id=uuid.uuid1(), body=message, ttl=ttl)
+        if timestamp:
+            now = convert_time_to_uuid(timestamp, randomize=True)
+        else:
+            now = uuid.uuid1()
+        msg = Message(id=now, body=message, ttl=ttl)
         if metadata:
             msg.metadata = metadata
         timestamp = (msg.id.time - 0x01b21dd213814000L) / 1e7

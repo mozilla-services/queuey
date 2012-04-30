@@ -3,12 +3,9 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 import unittest
 import uuid
-import os
 
 from nose.tools import eq_
 from nose.tools import raises
-
-import mock
 
 
 class StorageTestMessageBase(unittest.TestCase):

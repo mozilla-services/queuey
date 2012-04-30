@@ -114,7 +114,7 @@ class MessageQueueBackend(Interface):
         """
 
     def push(consistency, application_name, queue_name, message,
-             metadata=None, ttl=3600 * 24 * 3):
+             metadata=None, ttl=3600 * 24 * 3, timestamp=None):
         """Push a message onto the given queue
 
         The queue is assumed to exist, and will be created if it does not
@@ -128,6 +128,9 @@ class MessageQueueBackend(Interface):
         :type metadata: dict
         :param ttl: Time to Live in seconds for the message, after this
                     period the message should be unavilable
+        :param timestamp: The timestamp to use for the message, should be
+                          a float of seconds since the epoch as time.time()
+                          would return. Defaults to the current time.
 
         :returns: The message id and timestamp as a tuple
         :rtype: tuple
