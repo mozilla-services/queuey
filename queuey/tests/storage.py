@@ -228,7 +228,7 @@ class StorageTestMetadataBase(unittest.TestCase):
         info = backend.queue_information('myapp', ['fredrick'])
         eq_(info[0]['partitions'], 3)
 
-        eq_([], backend.queue_information('myapp', ['asdfasdf']))
+        eq_([{}], backend.queue_information('myapp', ['asdfasdf']))
 
     def test_must_use_list(self):
         @raises(Exception)

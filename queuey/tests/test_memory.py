@@ -15,3 +15,6 @@ class TestMemoryMetadata(StorageTestMetadataBase):
     def _makeOne(self):
         from queuey.storage.memory import MemoryMetadata
         return MemoryMetadata()
+
+del StorageTestMessageBase
+del StorageTestMetadataBase

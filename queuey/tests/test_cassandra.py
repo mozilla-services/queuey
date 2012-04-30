@@ -88,3 +88,6 @@ class TestCassandraMetadata(StorageTestMetadataBase):
         from queuey.storage.cassandra import CassandraMetadata
         host = os.environ.get('TEST_CASSANDRA_HOST', 'localhost')
         return CassandraMetadata(host)
+
+del StorageTestMessageBase
+del StorageTestMetadataBase

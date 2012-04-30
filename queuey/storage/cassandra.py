@@ -334,6 +334,9 @@ class CassandraMetadata(object):
             raise Exception("Queue names must be a list.")
         queue_names = ['%s:%s' % (application_name, queue_name) for
                        queue_name in queue_names]
-        results = self.queue_fam.multiget(keys=queue_names,
+        queues = self.queue_fam.multiget(keys=queue_names,
                                           read_consistency_level=ONE)
-        return [x[1] for x in results.items()]
+        results = []
+        for queue in queue_names:
+            results.append(queues.get(queue, {}))
+        return results
