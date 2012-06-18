@@ -1,9 +1,11 @@
 *.egg
 *.egg-info
+*.log
 *.pyc
 *.pid
 *$py.class
 *.pt.py
+*.sock
 *.txt.py
 *.ropeproject
 .Python
@@ -15,12 +17,12 @@ zookeeper/
 .tox/
 nosetests.xml
 build/
+cassandra
 dist/
 bin/
 lib/
 man/
 include/
-cassandra.pid
 deps
 docs/_build
 zookeeper.out
