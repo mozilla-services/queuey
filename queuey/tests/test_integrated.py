@@ -64,6 +64,7 @@ class TestQueueyBaseApp(unittest.TestCase):
         response = app.post('/v1/queuey/' + queue_name,
                         'Hello there 2!', headers=auth_header)
         result = json.loads(response.body)
+        msg_id = result['messages'][0]['key']
         msg_ts = result['messages'][0]['timestamp']
 
         app.post('/v1/queuey/' + queue_name,
@@ -73,9 +74,14 @@ class TestQueueyBaseApp(unittest.TestCase):
         resp = app.get('/v1/queuey/' + queue_name, {'since': msg_ts},
                        headers=auth_header)
         result = json.loads(resp.body)
-        if len(result['messages']) > 2:
+        if len(result['messages']) != 2:
             print msg_ts
             print result
+            from queuey.storage.util import convert_time_to_uuid
+            import uuid
+            print 'query  ', convert_time_to_uuid(float(msg_ts)).time
+            print 'message', uuid.UUID(msg_id).time
+
         eq_(2, len(result['messages']))
         msg = result['messages'][0]
         eq_('Hello there 2!', msg['body'])
