@@ -46,6 +46,21 @@ def comma_int_list(node, value):
             raise colander.Invalid(node, msg)
 
 
+class PreciseFloat(colander.Float):
+
+    def serialize(self, node, appstruct):
+        if appstruct is null:
+            return null
+        try:
+            # Use repr instead of str to keep precision
+            return repr(self.num(appstruct))
+        except Exception:
+            raise colander.Invalid(node,
+                          _('"${val}" is not a number',
+                            mapping={'val':appstruct}),
+                          )
+
+
 class GetMessages(colander.MappingSchema):
     since = colander.SchemaNode(colander.String(), missing=None)
     limit = colander.SchemaNode(colander.Int(), missing=None,
@@ -97,6 +112,10 @@ class Message(colander.MappingSchema):
                                     validator=max_queue_partition)
     ttl = colander.SchemaNode(colander.Int(), missing=60 * 60 * 24 * 3,
                               validator=colander.Range(1, 60 * 60 * 24 * 3))
+
+
+class UpdateMessage(Message):
+    timestamp = colander.SchemaNode(PreciseFloat(), missing=None)
 
 
 class MessageList(colander.SequenceSchema):

@@ -230,6 +230,36 @@ class TestQueueyBaseApp(unittest.TestCase):
         result = json.loads(resp.body)
         eq_(1, len(result['messages']))
 
+    def test_update_queue_message(self):
+        app, queue_name = self._make_app_queue()
+        h = auth_header.copy()
+        h['X-TTL'] = '300'
+        app.post('/v1/queuey/' + queue_name, 'Hello there!', headers=h)
+        resp = app.get('/v1/queuey/' + queue_name, headers=auth_header)
+        result = json.loads(resp.body)
+        eq_(1, len(result['messages']))
+
+        # update message
+        message = result['messages'][0]
+        message_id = message['message_id']
+        timestamp = message['timestamp']
+        q = urllib.quote_plus(message_id)
+        h = auth_header.copy()
+        h['X-TTL'] = '600'
+        h['X-Partition'] = '1'
+        h['X-Timestamp'] = repr(float(timestamp))
+        resp = app.put('/v1/queuey/%s/%s' % (queue_name, q), 'Good bye!',
+            headers=h)
+        eq_('200 OK', resp.status)
+
+        # check message
+        resp = app.get('/v1/queuey/' + queue_name, headers=auth_header)
+        result = json.loads(resp.body)
+        eq_(1, len(result['messages']))
+        message = result['messages'][0]
+        eq_('Good bye!', message['body'])
+        eq_(timestamp, message['timestamp'])
+
     def test_bad_partition(self):
         app, queue_name = self._make_app_queue()
         h = auth_header.copy()

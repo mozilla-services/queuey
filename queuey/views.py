@@ -134,6 +134,17 @@ def get_messages(context, request):
     }
 
 
+@view_config(context=MessageBatch, request_method='PUT', permission='create')
+def update_message(context, request):
+    msg = {'body': request.body,
+           'ttl': request.headers.get('X-TTL'),
+           'partition': request.headers.get('X-Partition'),
+           'timestamp': request.headers.get('X-Timestamp')}
+    params = validators.UpdateMessage().deserialize(msg)
+    context.update(params)
+    return {'status': 'ok'}
+
+
 @view_config(context=Queue, request_method='DELETE', permission='delete_queue')
 @view_config(context=MessageBatch, request_method='DELETE',
              permission='delete')
