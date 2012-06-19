@@ -249,10 +249,9 @@ class TestQueueyBaseApp(unittest.TestCase):
         message = result['messages'][0]
         message_id = message['message_id']
         timestamp = message['timestamp']
-        q = urllib.quote_plus(message_id)
+        q = urllib.quote_plus('1:' + message_id)
         h = auth_header.copy()
         h['X-TTL'] = '600'
-        h['X-Partition'] = '1'
         resp = app.put('/v1/queuey/%s/%s' % (queue_name, q), 'Good bye!',
             headers=h)
         eq_('200 OK', resp.status)

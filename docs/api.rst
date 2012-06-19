@@ -248,20 +248,21 @@ creates unless a set of principles was registered for the queue.
             ]
         }
 
-.. http:method:: PUT /v1/{application}/{queue_name}/{message_id}
+.. http:method:: PUT /v1/{application}/{queue_name}/{messages}
 
     :arg application: Application name
     :arg queue_name: Queue name to access
-    :arg message_id: A single hex message id.
+    :arg messages: A single hex message id, or comma separated list of hex
+                   message id's. To indicate partitions for the messages,
+                   prefix the hex message with the partition number and a
+                   colon.
     :optparam X-TTL: The messages TTL.
-    :optparam X-Partition: The messages partition. This must match the
-        original message partition or an additional message is created.
 
-    Overwrite the message with new data.
+    Overwrite existing messages with new data or create new messages.
 
     Example PUT as seen by server::
 
-        PUT /v1/my_application/somequeuename/3a6592301e0911e190b1002500f0fa7c HTTP/1.1
+        PUT /v1/my_application/somequeuename/2%38cc967e0cf1e45e3b0d4926c90057caf HTTP/1.1
         Host: site.running.queuey
         User-Agent: AwesomeClient
         Content-Length: 9
