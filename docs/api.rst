@@ -258,7 +258,9 @@ creates unless a set of principles was registered for the queue.
                    colon.
     :optparam X-TTL: The message's TTL, defaults to three days.
 
-    Overwrite existing messages with new data or create new messages.
+    Overwrite existing messages with new data or create new messages. The body
+    is assumed to be the entirety of the PUT body for all messages. There's no
+    support for doing a batch update with different body or TTL values.
 
     Example PUT as seen by server::
 
