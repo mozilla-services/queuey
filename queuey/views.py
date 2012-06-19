@@ -135,7 +135,7 @@ def get_messages(context, request):
 
 
 @view_config(context=MessageBatch, request_method='PUT', permission='create')
-def update_message(context, request):
+def update_messages(context, request):
     msg = {'body': request.body,
            'ttl': request.headers.get('X-TTL', 60 * 60 * 24 * 3),
            'partition': None}
