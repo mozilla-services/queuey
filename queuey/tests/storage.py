@@ -168,6 +168,24 @@ class StorageTestMessageBase(unittest.TestCase):
         # Test non-existing row
         eq_(backend.count('weak', 'myapp', 'no row'), 0)
 
+    def test_message_update(self):
+        backend = self._makeOne()
+        payload = 'a rather boring payload'
+        queue_name = uuid.uuid4().hex
+        key, timestamp = backend.push('weak', 'myapp', queue_name, payload)
+        existing = backend.retrieve_batch('weak', 'myapp', [queue_name])
+        eq_(1, len(existing))
+
+        backend.push('weak', 'myapp', queue_name, payload, timestamp=key)
+        existing = backend.retrieve_batch('weak', 'myapp', [queue_name])
+        eq_(1, len(existing))
+
+        # using just the message timestamp will generate a message with a new
+        # random host part
+        backend.push('weak', 'myapp', queue_name, payload, timestamp=timestamp)
+        existing = backend.retrieve_batch('weak', 'myapp', [queue_name])
+        eq_(2, len(existing))
+
 
 class StorageTestMetadataBase(unittest.TestCase):
     def _makeOne(self):

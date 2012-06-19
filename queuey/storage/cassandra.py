@@ -197,10 +197,12 @@ class CassandraQueueBackend(object):
              metadata=None, ttl=60 * 60 * 24 * 3, timestamp=None):
         """Push a message onto the queue"""
         cl = self.cl or self._get_cl(consistency)
-        if timestamp:
+        if not timestamp:
+            now = uuid.uuid1()
+        elif isinstance(timestamp, float):
             now = convert_time_to_uuid(timestamp, randomize=True)
         else:
-            now = uuid.uuid1()
+            now = uuid.UUID(hex=timestamp)
         queue_name = '%s:%s' % (application_name, queue_name)
         if metadata:
             batch = pycassa.batch.Mutator(self.pool,

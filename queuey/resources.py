@@ -222,7 +222,7 @@ class MessageBatch(object):
         # Copy parent ACL
         self.__acl__ = queue.__acl__[:]
 
-    def delete(self):
+    def _messages(self):
         partition_hash = collections.defaultdict(lambda: [])
         for msg_id in self.message_ids:
             if ':' in msg_id:
@@ -231,9 +231,20 @@ class MessageBatch(object):
                 partition = 1
             qn = '%s:%s' % (self.queue.queue_name, partition)
             partition_hash[qn].append(msg_id)
-        for queue, msgs in partition_hash.iteritems():
+        return partition_hash
+
+    def delete(self):
+        for queue, msgs in self._messages().iteritems():
             self.queue.storage.delete(
                     self.queue.consistency,
                     self.queue.application,
                     queue, *msgs)
+        return
+
+    def update(self, params):
+        for queue, msgs in self._messages().iteritems():
+            for msg in msgs:
+                self.queue.storage.push(self.queue.consistency,
+                    self.queue.application, queue,
+                    params['body'], ttl=params['ttl'], timestamp=msg)
         return

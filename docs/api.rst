@@ -248,6 +248,36 @@ creates unless a set of principles was registered for the queue.
             ]
         }
 
+.. http:method:: PUT /v1/{application}/{queue_name}/{messages}
+
+    :arg application: Application name
+    :arg queue_name: Queue name to access
+    :arg messages: A single hex message id, or comma separated list of hex
+                   message id's. To indicate partitions for the messages,
+                   prefix the hex message with the partition number and a
+                   colon.
+    :optparam X-TTL: The message's TTL, defaults to three days.
+
+    Overwrite existing messages with new data or create new messages. The body
+    is assumed to be the entirety of the PUT body for all messages. There's no
+    support for doing a batch update with different body or TTL values.
+
+    Example PUT as seen by server::
+
+        PUT /v1/my_application/somequeuename/2%38cc967e0cf1e45e3b0d4926c90057caf HTTP/1.1
+        Host: site.running.queuey
+        User-Agent: AwesomeClient
+        Content-Length: 9
+        Content-Type: application/text
+        X-TTL: 3600
+
+        New text.
+
+    Example success response::
+
+        {'status': 'ok'}
+
+
 .. http:method:: DELETE /v1/{application}/{queue_name}/{messages}
 
     :arg application: Application name
