@@ -242,9 +242,9 @@ class MessageBatch(object):
         return
 
     def update(self, params):
-        partition, msg_id = str(self.message_ids[0]).split(':')
-        queue = self.queue
-        qn = '%s:%s' % (queue.queue_name, partition)
-        queue.storage.push(queue.consistency, queue.application, qn,
-            params['body'], ttl=params['ttl'], timestamp=msg_id)
+        for queue, msgs in self._messages().iteritems():
+            for msg in msgs:
+                self.queue.storage.push(self.queue.consistency,
+                    self.queue.application, queue,
+                    params['body'], ttl=params['ttl'], timestamp=msg)
         return
