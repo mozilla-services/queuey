@@ -138,9 +138,8 @@ def get_messages(context, request):
 def update_message(context, request):
     msg = {'body': request.body,
            'ttl': request.headers.get('X-TTL'),
-           'partition': request.headers.get('X-Partition'),
-           'timestamp': request.headers.get('X-Timestamp')}
-    params = validators.UpdateMessage().deserialize(msg)
+           'partition': request.headers.get('X-Partition')}
+    params = validators.Message().deserialize(msg)
     context.update(params)
     return {'status': 'ok'}
 

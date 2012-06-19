@@ -253,7 +253,6 @@ class TestQueueyBaseApp(unittest.TestCase):
         h = auth_header.copy()
         h['X-TTL'] = '600'
         h['X-Partition'] = '1'
-        h['X-Timestamp'] = repr(float(timestamp))
         resp = app.put('/v1/queuey/%s/%s' % (queue_name, q), 'Good bye!',
             headers=h)
         eq_('200 OK', resp.status)
