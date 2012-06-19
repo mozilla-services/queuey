@@ -4,6 +4,7 @@
 import os
 import unittest
 import urllib
+import uuid
 import json
 
 from paste.deploy import loadapp
@@ -286,6 +287,24 @@ class TestQueueyBaseApp(unittest.TestCase):
         eq_(2, len(result['messages']))
         eq_('Bye', result['messages'][0]['body'])
         eq_('Bye', result['messages'][1]['body'])
+
+    def test_update_messages_implicit_create(self):
+        app, queue_name = self._make_app_queue()
+        h = auth_header.copy()
+
+        # update non-existing messages
+        id0 = uuid.uuid1().hex
+        id1 = uuid.uuid1().hex
+        q = urllib.quote_plus('1:' + id0 + ',1:' + id1)
+        resp = app.put('/v1/queuey/%s/%s' % (queue_name, q), 'Yo', headers=h)
+        eq_('200 OK', resp.status)
+
+        # check messages
+        resp = app.get('/v1/queuey/' + queue_name, headers=h)
+        result = json.loads(resp.body)
+        eq_(2, len(result['messages']))
+        eq_('Yo', result['messages'][0]['body'])
+        eq_('Yo', result['messages'][1]['body'])
 
     def test_bad_partition(self):
         app, queue_name = self._make_app_queue()
