@@ -248,6 +248,34 @@ creates unless a set of principles was registered for the queue.
             ]
         }
 
+.. http:method:: PUT /v1/{application}/{queue_name}/{message_id}
+
+    :arg application: Application name
+    :arg queue_name: Queue name to access
+    :arg message_id: A single hex message id.
+    :optparam X-TTL: The messages TTL.
+    :optparam X-Partition: The messages partition. This must match the
+        original message partition or an additional message is created.
+
+    Overwrite the message with new data.
+
+    Example PUT as seen by server::
+
+        PUT /v1/my_application/somequeuename/3a6592301e0911e190b1002500f0fa7c HTTP/1.1
+        Host: site.running.queuey
+        User-Agent: AwesomeClient
+        Content-Length: 9
+        Content-Type: application/text
+        X-TTL: 3600
+        X-Partition: 2
+
+        New text.
+
+    Example success response::
+
+        {'status': 'ok'}
+
+
 .. http:method:: DELETE /v1/{application}/{queue_name}/{messages}
 
     :arg application: Application name
