@@ -158,10 +158,12 @@ class MemoryQueueBackend(object):
     def push(self, consistency, application_name, queue_name, message,
              metadata=None, ttl=60 * 60 * 24 * 3, timestamp=None):
         """Push a message onto the queue"""
-        if timestamp:
+        if not timestamp:
+            now = uuid.uuid1()
+        elif isinstance(timestamp, float):
             now = convert_time_to_uuid(timestamp, randomize=True)
         else:
-            now = uuid.uuid1()
+            now = uuid.UUID(hex=timestamp)
         msg = Message(id=now, body=message, ttl=ttl)
         if metadata:
             msg.metadata = metadata
