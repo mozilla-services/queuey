@@ -270,7 +270,6 @@ creates unless a set of principles was registered for the queue.
         Content-Length: 9
         Content-Type: application/text
         X-TTL: 3600
-        X-Partition: 2
 
         New text.
 
