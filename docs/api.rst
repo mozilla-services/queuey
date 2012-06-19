@@ -256,7 +256,7 @@ creates unless a set of principles was registered for the queue.
                    message id's. To indicate partitions for the messages,
                    prefix the hex message with the partition number and a
                    colon.
-    :optparam X-TTL: The messages TTL, defaults to three days.
+    :optparam X-TTL: The message's TTL, defaults to three days.
 
     Overwrite existing messages with new data or create new messages.
 
