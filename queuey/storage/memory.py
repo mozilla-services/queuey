@@ -30,6 +30,11 @@ class Message(object):
             now = (self.id.time - 0x01b21dd213814000L) / 1e7
             self.expiration = now + ttl
 
+    def __eq__(self, other):
+        if isinstance(other, Message):
+            return self.id == other.id
+        return id(self) == id(other)
+
 
 class Application(object):
     def __init__(self, application_name):
@@ -169,6 +174,8 @@ class MemoryQueueBackend(object):
             msg.metadata = metadata
         timestamp = (msg.id.time - 0x01b21dd213814000L) / 1e7
         queue_name = '%s:%s' % (application_name, queue_name)
+        if msg in message_store[queue_name]:
+            message_store[queue_name].remove(msg)
         message_store[queue_name].append(msg)
         return msg.id.hex, timestamp
 
