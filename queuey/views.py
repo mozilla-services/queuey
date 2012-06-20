@@ -34,6 +34,7 @@ class UJSONRendererFactory:
 @view_config(context='queuey.resources.InvalidQueueName')
 @view_config(context='queuey.resources.InvalidUpdate')
 @view_config(context='queuey.resources.InvalidMessageID')
+@view_config(context='queuey.resources.MessageIDNotFound')
 @view_config(context='queuey.storage.StorageUnavailable')
 def bad_params(context, request):
     exc = request.exception
@@ -131,6 +132,14 @@ def get_messages(context, request):
     return {
         'status': 'ok',
         'messages': context.get_messages(**params)
+    }
+
+
+@view_config(context=MessageBatch, request_method='GET', permission='view')
+def get_messages_by_key(context, request):
+    return {
+        'status': 'ok',
+        'messages': context.get(),
     }
 
 
