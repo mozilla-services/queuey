@@ -255,7 +255,7 @@ class TestQueueyBaseApp(unittest.TestCase):
         h['X-TTL'] = '600'
         resp = app.put('/v1/queuey/%s/%s' % (queue_name, q), 'Good bye!',
             headers=h)
-        eq_('200 OK', resp.status)
+        eq_(200, resp.status_int)
 
         # check message
         resp = app.get('/v1/queuey/' + queue_name, headers=auth_header)
@@ -279,7 +279,7 @@ class TestQueueyBaseApp(unittest.TestCase):
         id1 = result['messages'][1]['message_id']
         q = urllib.quote_plus('1:' + id0 + ',1:' + id1)
         resp = app.put('/v1/queuey/%s/%s' % (queue_name, q), 'Bye', headers=h)
-        eq_('200 OK', resp.status)
+        eq_(200, resp.status_int)
 
         # check messages
         resp = app.get('/v1/queuey/' + queue_name, headers=h)
@@ -297,7 +297,7 @@ class TestQueueyBaseApp(unittest.TestCase):
         id1 = uuid.uuid1().hex
         q = urllib.quote_plus('1:' + id0 + ',1:' + id1)
         resp = app.put('/v1/queuey/%s/%s' % (queue_name, q), 'Yo', headers=h)
-        eq_('200 OK', resp.status)
+        eq_(200, resp.status_int)
 
         # check messages
         resp = app.get('/v1/queuey/' + queue_name, headers=h)
