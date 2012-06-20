@@ -248,6 +248,39 @@ creates unless a set of principles was registered for the queue.
             ]
         }
 
+.. http:method:: GET /v1/{application}/{queue_name}/{messages}
+
+    :arg application: Application name
+    :arg queue_name: Queue name to access
+    :arg messages: A single hex message id, or comma separated list of hex
+                   message id's. To indicate partitions for the messages,
+                   prefix the hex message with the partition number and a
+                   colon.
+
+    Get messages by their message ids from a queue. If some of the messages
+    aren't found they are omitted from the result. If no message can be
+    found a 404 Not Found is returned.
+
+    Example response::
+
+        {
+            'status': 'ok',
+            'messages': [
+                {
+                    'message_id': '3a6592301e0911e190b1002500f0fa7c',
+                    'timestamp': 1323973966282.637,
+                    'body': 'jlaijwiel2432532jilj',
+                    'partition': 1
+                },
+                {
+                    'message_id': '3a8553d71e0911e19262002500f0fa7c',
+                    'timestamp': 1323973966918.241,
+                    'body': 'ion12oibasdfjioawneilnf',
+                    'partition': 2
+                }
+            ]
+        }
+
 .. http:method:: PUT /v1/{application}/{queue_name}/{messages}
 
     :arg application: Application name

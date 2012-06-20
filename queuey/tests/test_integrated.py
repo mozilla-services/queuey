@@ -237,6 +237,57 @@ class TestQueueyBaseApp(unittest.TestCase):
         result = json.loads(resp.body)
         eq_(1, len(result['messages']))
 
+    def test_get_messages_by_key(self):
+        app, queue_name = self._make_app_queue({'partitions': 2})
+
+        # Post several messages
+        test_msgs = {
+            'messages': [
+                {'body': 'Hello msg 1', 'partition': 1},
+                {'body': 'Hello msg 2', 'partition': 1},
+                {'body': 'Hello msg 3', 'partition': 2},
+            ]
+        }
+        msgs = json.dumps(test_msgs)
+        json_header = {'Content-Type': 'application/json'}
+        json_header.update(auth_header)
+        resp = app.post('/v1/queuey/' + queue_name, msgs, headers=json_header)
+        result = json.loads(resp.body)
+
+        messages = []
+        for m in result['messages']:
+            messages.append(urllib.quote_plus(
+                str(m['partition']) + ':' + m['key']))
+
+        # Fetch a non-existing message
+        fake = '3%3A' + uuid.uuid1().hex
+        resp = app.get('/v1/queuey/%s/%s' % (queue_name, fake),
+            headers=auth_header, status=404)
+        eq_(404, resp.status_int)
+
+        # Fetch first message
+        resp = app.get('/v1/queuey/%s/%s' % (queue_name, messages[0]),
+            headers=auth_header)
+        result = json.loads(resp.body)
+        eq_(1, len(result['messages']))
+        eq_(messages[0][4:], result['messages'][0]['message_id'])
+
+        # Fetch one existing and one non-existing message
+        resp = app.get('/v1/queuey/%s/%s,%s' % (queue_name, messages[0], fake),
+            headers=auth_header)
+        result = json.loads(resp.body)
+        eq_(1, len(result['messages']))
+        eq_(messages[0][4:], result['messages'][0]['message_id'])
+
+        # Fetch multiple messages
+        resp = app.get('/v1/queuey/%s/%s' % (queue_name, ','.join(messages)),
+            headers=auth_header)
+        result = json.loads(resp.body)
+        eq_(3, len(result['messages']))
+        bodies = set([m['body'] for m in result['messages']])
+        test_bodies = set([m['body'] for m in test_msgs['messages']])
+        eq_(test_bodies, bodies)
+
     def test_update_message(self):
         app, queue_name = self._make_app_queue()
         h = auth_header.copy()
@@ -255,7 +306,7 @@ class TestQueueyBaseApp(unittest.TestCase):
         h['X-TTL'] = '600'
         resp = app.put('/v1/queuey/%s/%s' % (queue_name, q), 'Good bye!',
             headers=h)
-        eq_('200 OK', resp.status)
+        eq_(200, resp.status_int)
 
         # check message
         resp = app.get('/v1/queuey/' + queue_name, headers=auth_header)
@@ -279,7 +330,7 @@ class TestQueueyBaseApp(unittest.TestCase):
         id1 = result['messages'][1]['message_id']
         q = urllib.quote_plus('1:' + id0 + ',1:' + id1)
         resp = app.put('/v1/queuey/%s/%s' % (queue_name, q), 'Bye', headers=h)
-        eq_('200 OK', resp.status)
+        eq_(200, resp.status_int)
 
         # check messages
         resp = app.get('/v1/queuey/' + queue_name, headers=h)
@@ -297,7 +348,7 @@ class TestQueueyBaseApp(unittest.TestCase):
         id1 = uuid.uuid1().hex
         q = urllib.quote_plus('1:' + id0 + ',1:' + id1)
         resp = app.put('/v1/queuey/%s/%s' % (queue_name, q), 'Yo', headers=h)
-        eq_('200 OK', resp.status)
+        eq_(200, resp.status_int)
 
         # check messages
         resp = app.get('/v1/queuey/' + queue_name, headers=h)
