@@ -29,6 +29,13 @@ class InvalidMessageID(Exception):
     status = 400
 
 
+def transform_stored_message(message):
+    del message['metadata']
+    message['partition'] = int(message['queue_name'].split(':')[-1])
+    del message['queue_name']
+    message['timestamp'] = repr(message['timestamp'])
+
+
 class Root(object):
     __acl__ = []
 
@@ -197,10 +204,7 @@ class Queue(object):
             self.consistency, self.application, queue_names, start_at=since,
             limit=limit, order=order)
         for res in results:
-            del res['metadata']
-            res['partition'] = int(res['queue_name'].split(':')[-1])
-            del res['queue_name']
-            res['timestamp'] = repr(res['timestamp'])
+            transform_stored_message(res)
         self.metlog.incr('%s.get_message' % self.application,
                          count=len(results))
         return results
