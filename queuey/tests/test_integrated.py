@@ -262,8 +262,9 @@ class TestQueueyBaseApp(unittest.TestCase):
         # Fetch a non-existing message
         fake = '3%3A' + uuid.uuid1().hex
         resp = app.get('/v1/queuey/%s/%s' % (queue_name, fake),
-            headers=auth_header, status=404)
-        eq_(404, resp.status_int)
+            headers=auth_header)
+        result = json.loads(resp.body)
+        eq_(0, len(result['messages']))
 
         # Fetch first message
         resp = app.get('/v1/queuey/%s/%s' % (queue_name, messages[0]),

@@ -257,9 +257,8 @@ creates unless a set of principles was registered for the queue.
                    prefix the hex message with the partition number and a
                    colon.
 
-    Get messages by their message ids from a queue. If some of the messages
-    aren't found they are omitted from the result. If no message can be
-    found a 404 Not Found is returned.
+    Get messages by their message ids from a queue. This API acts as a search,
+    so any message that cannot be found is omitted from the result.
 
     Example response::
 

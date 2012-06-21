@@ -29,11 +29,6 @@ class InvalidMessageID(Exception):
     status = 400
 
 
-class MessageIDNotFound(Exception):
-    """Raised when message ID's aren't found"""
-    status = 404
-
-
 def transform_stored_message(message):
     del message['metadata']
     message['partition'] = int(message['queue_name'].split(':')[-1])
@@ -261,8 +256,6 @@ class MessageBatch(object):
                     results.append(res)
         self.queue.metlog.incr('%s.get_message' % self.queue.application,
             count=len(results))
-        if not results:
-            raise MessageIDNotFound("Message ID not found.")
         return results
 
     def update(self, params):
