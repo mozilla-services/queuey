@@ -34,7 +34,6 @@ class UJSONRendererFactory:
 @view_config(context='queuey.resources.InvalidQueueName')
 @view_config(context='queuey.resources.InvalidUpdate')
 @view_config(context='queuey.resources.InvalidMessageID')
-@view_config(context='queuey.resources.MessageIDNotFound')
 @view_config(context='queuey.storage.StorageUnavailable')
 def bad_params(context, request):
     exc = request.exception
