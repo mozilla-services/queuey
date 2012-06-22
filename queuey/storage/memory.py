@@ -68,7 +68,7 @@ class MemoryQueueBackend(object):
                 # Assume its a hex, transform to a UUID
                 start_at = uuid.UUID(hex=start_at)
             else:
-                # Assume its a float, convert to UUID
+                # Assume its a float/decimal, convert to UUID
                 start_at = convert_time_to_uuid(start_at)
 
         queue_names = ['%s:%s' % (application_name, x) for x in queue_names]

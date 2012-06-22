@@ -124,6 +124,9 @@ class CassandraQueueBackend(object):
             if isinstance(start_at, basestring):
                 # Assume its a hex, transform to a datetime
                 start_at = uuid.UUID(hex=start_at)
+            else:
+                # Assume its a float/decimal, convert to UUID
+                start_at = convert_time_to_uuid(start_at)
 
             kwargs['column_start'] = start_at
 
