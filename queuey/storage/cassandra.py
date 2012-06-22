@@ -1,6 +1,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
+from decimal import Decimal
 import inspect
 import uuid
 import time
@@ -165,9 +166,12 @@ class CassandraQueueBackend(object):
                  include_metadata=False):
         """Retrieve a single message"""
         cl = self.cl or self._get_cl(consistency)
-        if isinstance(message_id, str):
+        if isinstance(message_id, basestring):
             # Convert to uuid for lookup
             message_id = uuid.UUID(hex=message_id)
+        else:
+            # Assume its a float/decimal, convert to UUID
+            message_id = convert_time_to_uuid(message_id)
 
         kwargs = {
             'read_consistency_level': cl,
@@ -202,7 +206,7 @@ class CassandraQueueBackend(object):
         cl = self.cl or self._get_cl(consistency)
         if not timestamp:
             now = uuid.uuid1()
-        elif isinstance(timestamp, float):
+        elif isinstance(timestamp, (float, Decimal)):
             now = convert_time_to_uuid(timestamp, randomize=True)
         else:
             now = uuid.UUID(hex=timestamp)

@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 from collections import defaultdict
+from decimal import Decimal
 import uuid
 import time
 
@@ -127,11 +128,11 @@ class MemoryQueueBackend(object):
     def retrieve(self, consistency, application_name, queue_name, message_id,
                  include_metadata=False):
         """Retrieve a single message"""
-        if isinstance(message_id, str):
+        if isinstance(message_id, basestring):
             # Convert to uuid for lookup
             message_id = uuid.UUID(hex=message_id)
         else:
-            # Assume its a float, convert to UUID
+            # Assume its a float/decimal, convert to UUID
             message_id = convert_time_to_uuid(message_id)
 
         queue_name = '%s:%s' % (application_name, queue_name)
@@ -165,7 +166,7 @@ class MemoryQueueBackend(object):
         """Push a message onto the queue"""
         if not timestamp:
             now = uuid.uuid1()
-        elif isinstance(timestamp, float):
+        elif isinstance(timestamp, (float, Decimal)):
             now = convert_time_to_uuid(timestamp, randomize=True)
         else:
             now = uuid.UUID(hex=timestamp)
