@@ -2,6 +2,15 @@
 from decimal import Decimal
 import random
 import uuid
+
+try:
+    decimal_from_float = Decimal.from_float
+except AttributeError:
+    # For Python < 2.7, use less precise repr() conversion,
+    # preserving 16 decimal digits
+    def decimal_from_float(value):
+        return Decimal(repr(value))
+
 # This function copied from pycassa, under MIT license
 # Copyright (c) 2009 Jonathan Hseu
 #
@@ -62,10 +71,10 @@ def convert_time_to_uuid(time_arg, lowest_val=True, randomize=False):  # pragma:
     """
     if isinstance(time_arg, uuid.UUID):
         return time_arg
-    if isinstance(time_arg, Decimal):
-        time_arg = float(time_arg)
+    if isinstance(time_arg, float):
+        time_arg = decimal_from_float(time_arg)
 
-    microseconds = int(time_arg * 1e6)
+    microseconds = int(time_arg * Decimal('1e6'))
 
     # 0x01b21dd213814000 is the number of 100-ns intervals between the
     # UUID epoch 1582-10-15 00:00:00 and the Unix epoch 1970-01-01 00:00:00.
