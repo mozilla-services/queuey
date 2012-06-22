@@ -85,7 +85,7 @@ class MemoryQueueBackend(object):
                 beg = msgs[0].id
                 end = msgs[-1].id
                 if point <= (beg.time, beg.bytes):
-                    # Is the start_at less than the beginning? Start at begining
+                    # Is the start_at less than the beginning? Start at beginning
                     start = 0
                 elif point >= (end.time, end.bytes):
                     # Is the start_at larger than the end? Start at the end
