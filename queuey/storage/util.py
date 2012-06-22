@@ -7,7 +7,7 @@ try:
     decimal_from_float = Decimal.from_float
 except AttributeError:
     # For Python < 2.7, use less precise repr() conversion,
-    # preserving 16 decimal digits
+    # preserving only 15 decimal digits
     def decimal_from_float(value):
         return Decimal(repr(value))
 
