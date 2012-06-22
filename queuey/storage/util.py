@@ -46,17 +46,16 @@ def convert_time_to_uuid(time_arg, lowest_val=True, randomize=False):  # pragma:
     with slice arguments, however, as the non-timestamp portions
     can be set to their lowest or highest possible values.
 
-    :param datetime:
+    :param time_arg:
       The time to use for the timestamp portion of the UUID.
-      Expected inputs to this would either be a :class:`datetime`
-      object or a timestamp with the same precision produced by
-      :meth:`time.time()`. That is, sub-second precision should
-      be below the decimal place.
-    :type datetime: :class:`datetime` or timestamp
+      Expected inputs to this would either be a :class:`decimal` object or
+      a timestamp with a precision of at most 100 nanoseconds.
+      Sub-second precision should be below the decimal place.
+    :type time_arg: :class:`decimal` or timestamp
 
     :param lowest_val:
       Whether the UUID produced should be the lowest possible value
-      UUID with the same timestamp as datetime or the highest possible
+      UUID with the same timestamp as time_arg or the highest possible
       value.
     :type lowest_val: bool
 
