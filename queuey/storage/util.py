@@ -74,11 +74,11 @@ def convert_time_to_uuid(time_arg, lowest_val=True, randomize=False):  # pragma:
     if isinstance(time_arg, float):
         time_arg = decimal_from_float(time_arg)
 
-    microseconds = int(time_arg * Decimal('1e6'))
+    ns_100 = int(time_arg * Decimal('1e7'))
 
     # 0x01b21dd213814000 is the number of 100-ns intervals between the
     # UUID epoch 1582-10-15 00:00:00 and the Unix epoch 1970-01-01 00:00:00.
-    timestamp = int(microseconds * 10) + 0x01b21dd213814000L
+    timestamp = ns_100 + 0x01b21dd213814000L
 
     time_low = timestamp & 0xffffffffL
     time_mid = (timestamp >> 32L) & 0xffffL
