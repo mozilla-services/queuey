@@ -52,7 +52,7 @@ class MessageQueueBackend(Interface):
         :param queue_names: List of queue names to retrieve from
         :param limit: Amount of messages to retrieve
         :param include_metadata: Whether to include message metadata
-        :param start_at: Either a datetime or message id to start from
+        :param start_at: Either a timestamp or message id to start from
         :param order: Which order to traverse the messages. Defaults to
                       ascending order.
         :type order: `ascending` or `descending`
