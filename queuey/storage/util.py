@@ -1,4 +1,5 @@
 """Storage utility functions"""
+from decimal import Decimal
 import random
 import uuid
 # This function copied from pycassa, under MIT license
@@ -61,6 +62,8 @@ def convert_time_to_uuid(time_arg, lowest_val=True, randomize=False):  # pragma:
     """
     if isinstance(time_arg, uuid.UUID):
         return time_arg
+    if isinstance(time_arg, Decimal):
+        time_arg = float(time_arg)
 
     microseconds = int(time_arg * 1e6)
 
