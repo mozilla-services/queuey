@@ -59,14 +59,14 @@ rejected.
                     'partitions': 1,
                     'created': 1322521547,
                     'type': 'user',
-                    'count': 932                
+                    'count': 932
                 },
                 {
                     'queue_name': 'another queue',
                     'partitions': 4,
                     'created': 1325243233,
                     'type': 'user',
-                    'count': 232                
+                    'count': 232
                 },
             ]
         }
@@ -220,7 +220,7 @@ creates unless a set of principles was registered for the queue.
 
     Any ``Content-Type`` header will be recorded with the message. The body
     is assumed to be the entirety of the POST body. The TTL or Partition can
-    be set by including the appropriate value with either ``X-TTL`` or 
+    be set by including the appropriate value with either ``X-TTL`` or
     ``X-Partition`` HTTP headers in the request.
 
     Example POST as seen by server including both *optional* HTTP headers::
