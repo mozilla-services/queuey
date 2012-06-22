@@ -76,12 +76,9 @@ class TestQueueyBaseApp(unittest.TestCase):
                        headers=auth_header)
         result = json.loads(resp.body)
         if len(result['messages']) != 2:
+            print msg_id
             print msg_ts
             print result
-            from queuey.storage.util import convert_time_to_uuid
-            import uuid
-            print 'query  ', convert_time_to_uuid(float(msg_ts)).time
-            print 'message', uuid.UUID(msg_id).time
 
         eq_(2, len(result['messages']))
         msg = result['messages'][0]
