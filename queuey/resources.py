@@ -34,7 +34,7 @@ def transform_stored_message(message):
     del message['metadata']
     message['partition'] = int(message['queue_name'].split(':')[-1])
     del message['queue_name']
-    message['timestamp'] = repr(message['timestamp'])
+    message['timestamp'] = str(message['timestamp'])
 
 
 class Root(object):
@@ -189,7 +189,7 @@ class Queue(object):
                                           msgs)
         rl = []
         for i, msg in enumerate(results):
-            rl.append({'key': msg[0], 'timestamp': repr(msg[1]),
+            rl.append({'key': msg[0], 'timestamp': str(msg[1]),
                        'partition': messages[i]['partition']})
         self.metlog.incr('%s.new_message' % self.application,
                          count=len(results))

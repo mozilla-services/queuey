@@ -28,7 +28,7 @@ class Message(object):
         self.ttl = None
         self.expiration = None
         if ttl:
-            now = (self.id.time - 0x01b21dd213814000L) / 1e7
+            now = Decimal(self.id.time - 0x01b21dd213814000L) / Decimal('1e7')
             self.expiration = now + ttl
 
     def __eq__(self, other):
@@ -74,7 +74,7 @@ class MemoryQueueBackend(object):
 
         queue_names = ['%s:%s' % (application_name, x) for x in queue_names]
         results = []
-        now = time.time()
+        now = Decimal(repr(time.time()))
         for queue_name in queue_names:
             msgs = message_store[queue_name]
             if not msgs:
@@ -115,7 +115,8 @@ class MemoryQueueBackend(object):
                     break
                 obj = {
                     'message_id': msg.id.hex,
-                    'timestamp': (msg.id.time - 0x01b21dd213814000L) / 1e7,
+                    'timestamp': (Decimal(msg.id.time - 0x01b21dd213814000L) /
+                        Decimal('1e7')),
                     'body': msg.body,
                     'metadata': {},
                     'queue_name': queue_name[queue_name.find(':'):]
@@ -146,13 +147,15 @@ class MemoryQueueBackend(object):
         if not found:
             return {}
 
-        if found.expiration and time.time() > found.expiration:
+        now = Decimal(repr(time.time()))
+        if found.expiration and now > found.expiration:
             queue.remove(found)
             return {}
 
         obj = {
             'message_id': found.id.hex,
-            'timestamp': (found.id.time - 0x01b21dd213814000L) / 1e7,
+            'timestamp': (Decimal(found.id.time - 0x01b21dd213814000L) /
+                Decimal('1e7')),
             'body': found.body,
             'metadata': {},
             'queue_name': queue_name[queue_name.find(':'):]
@@ -173,7 +176,7 @@ class MemoryQueueBackend(object):
         msg = Message(id=now, body=message, ttl=ttl)
         if metadata:
             msg.metadata = metadata
-        timestamp = (msg.id.time - 0x01b21dd213814000L) / 1e7
+        timestamp = Decimal(msg.id.time - 0x01b21dd213814000L) / Decimal('1e7')
         queue_name = '%s:%s' % (application_name, queue_name)
         if msg in message_store[queue_name]:
             message_store[queue_name].remove(msg)
@@ -189,7 +192,8 @@ class MemoryQueueBackend(object):
             if metadata:
                 msg.metadata = metadata
             message_store[qn].append(msg)
-            timestamp = (msg.id.time - 0x01b21dd213814000L) / 1e7
+            timestamp = (Decimal(msg.id.time - 0x01b21dd213814000L) /
+                Decimal('1e7'))
             msgs.append((msg.id.hex, timestamp))
         return msgs
 
