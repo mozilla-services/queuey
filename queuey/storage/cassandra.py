@@ -121,7 +121,7 @@ class CassandraQueueBackend(object):
             kwargs['column_count'] = limit
 
         if start_at:
-            if isinstance(start_at, str):
+            if isinstance(start_at, basestring):
                 # Assume its a hex, transform to a datetime
                 start_at = uuid.UUID(hex=start_at)
 

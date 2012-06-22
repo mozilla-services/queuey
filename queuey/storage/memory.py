@@ -64,7 +64,7 @@ class MemoryQueueBackend(object):
         order = -1 if order == 'descending' else 1
 
         if start_at:
-            if isinstance(start_at, str):
+            if isinstance(start_at, basestring):
                 # Assume its a hex, transform to a UUID
                 start_at = uuid.UUID(hex=start_at)
             else:
