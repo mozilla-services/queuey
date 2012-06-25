@@ -12,6 +12,8 @@ from queuey.storage import MessageQueueBackend
 from queuey.storage import MetadataBackend
 from queuey.storage.util import convert_time_to_uuid
 
+DECIMAL_1E7 = Decimal('1e7')
+
 # Queue's keyed by applciation_name + queue_name
 # Queues are just a list of Message objects
 message_store = defaultdict(list)
@@ -28,7 +30,7 @@ class Message(object):
         self.ttl = None
         self.expiration = None
         if ttl:
-            now = Decimal(self.id.time - 0x01b21dd213814000L) / Decimal('1e7')
+            now = Decimal(self.id.time - 0x01b21dd213814000L) / DECIMAL_1E7
             self.expiration = now + ttl
 
     def __eq__(self, other):
@@ -116,7 +118,7 @@ class MemoryQueueBackend(object):
                 obj = {
                     'message_id': msg.id.hex,
                     'timestamp': (Decimal(msg.id.time - 0x01b21dd213814000L) /
-                        Decimal('1e7')),
+                        DECIMAL_1E7),
                     'body': msg.body,
                     'metadata': {},
                     'queue_name': queue_name[queue_name.find(':'):]
@@ -155,7 +157,7 @@ class MemoryQueueBackend(object):
         obj = {
             'message_id': found.id.hex,
             'timestamp': (Decimal(found.id.time - 0x01b21dd213814000L) /
-                Decimal('1e7')),
+                DECIMAL_1E7),
             'body': found.body,
             'metadata': {},
             'queue_name': queue_name[queue_name.find(':'):]
@@ -176,7 +178,7 @@ class MemoryQueueBackend(object):
         msg = Message(id=now, body=message, ttl=ttl)
         if metadata:
             msg.metadata = metadata
-        timestamp = Decimal(msg.id.time - 0x01b21dd213814000L) / Decimal('1e7')
+        timestamp = Decimal(msg.id.time - 0x01b21dd213814000L) / DECIMAL_1E7
         queue_name = '%s:%s' % (application_name, queue_name)
         if msg in message_store[queue_name]:
             message_store[queue_name].remove(msg)
@@ -193,7 +195,7 @@ class MemoryQueueBackend(object):
                 msg.metadata = metadata
             message_store[qn].append(msg)
             timestamp = (Decimal(msg.id.time - 0x01b21dd213814000L) /
-                Decimal('1e7'))
+                DECIMAL_1E7)
             msgs.append((msg.id.hex, timestamp))
         return msgs
 

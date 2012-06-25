@@ -20,6 +20,7 @@ ONE = pycassa.ConsistencyLevel.ONE
 QUORUM = pycassa.ConsistencyLevel.QUORUM
 LOCAL_QUORUM = pycassa.ConsistencyLevel.LOCAL_QUORUM
 EACH_QUORUM = pycassa.ConsistencyLevel.EACH_QUORUM
+DECIMAL_1E7 = Decimal('1e7')
 
 
 def parse_hosts(raw_hosts):
@@ -148,7 +149,7 @@ class CassandraQueueBackend(object):
                 obj = {
                     'message_id': msg_id.hex,
                     'timestamp': (Decimal(msg_id.time - 0x01b21dd213814000L) /
-                        Decimal('1e7')),
+                        DECIMAL_1E7),
                     'body': body,
                     'metadata': {},
                     'queue_name': queue_name[queue_name.find(':'):]
@@ -187,7 +188,7 @@ class CassandraQueueBackend(object):
         obj = {
             'message_id': msg_id.hex,
             'timestamp': (Decimal(msg_id.time - 0x01b21dd213814000L) /
-                Decimal('1e7')),
+                DECIMAL_1E7),
             'body': body,
             'metadata': {},
             'queue_name': queue_name[queue_name.find(':'):]
@@ -223,7 +224,7 @@ class CassandraQueueBackend(object):
         else:
             self.message_fam.insert(key=queue_name, columns={now: message},
                                     ttl=ttl, write_consistency_level=cl)
-        timestamp = Decimal(now.time - 0x01b21dd213814000L) / Decimal('1e7')
+        timestamp = Decimal(now.time - 0x01b21dd213814000L) / DECIMAL_1E7
         return now.hex, timestamp
 
     def push_batch(self, consistency, application_name, message_data):
@@ -238,8 +239,7 @@ class CassandraQueueBackend(object):
                          ttl=ttl)
             if metadata:
                 batch.insert(self.meta_fam, key=now, columns=metadata, ttl=ttl)
-            timestamp = (Decimal(now.time - 0x01b21dd213814000L) /
-                Decimal('1e7'))
+            timestamp = (Decimal(now.time - 0x01b21dd213814000L) / DECIMAL_1E7)
             msgs.append((now.hex, timestamp))
         batch.send()
         return msgs

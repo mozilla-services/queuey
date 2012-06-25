@@ -11,6 +11,8 @@ except AttributeError:
     def decimal_from_float(value):
         return Decimal(repr(value))
 
+DECIMAL_1E7 = Decimal('1e7')
+
 # This function copied from pycassa, under MIT license
 # Copyright (c) 2009 Jonathan Hseu
 #
@@ -73,7 +75,7 @@ def convert_time_to_uuid(time_arg, lowest_val=True, randomize=False):  # pragma:
     if isinstance(time_arg, float):
         time_arg = decimal_from_float(time_arg)
 
-    ns_100 = int(time_arg * Decimal('1e7'))
+    ns_100 = int(time_arg * DECIMAL_1E7)
 
     # 0x01b21dd213814000 is the number of 100-ns intervals between the
     # UUID epoch 1582-10-15 00:00:00 and the Unix epoch 1970-01-01 00:00:00.
