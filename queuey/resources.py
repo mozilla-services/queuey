@@ -9,7 +9,7 @@ from pyramid.security import Allow
 from pyramid.security import Everyone
 
 
-DECIMAL_REGEX = re.compile(r'^\d+(\.\d+)?')
+DECIMAL_REGEX = re.compile(r'^\d+(\.\d+)?$')
 MESSAGE_REGEX = re.compile(
     r'(?:\d\:)?[a-zA-Z0-9]{32}(?:\,(?:\d{1,3}\:)?[a-zA-Z0-9]{32}){0,}'
 )
