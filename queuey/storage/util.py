@@ -1,15 +1,7 @@
 """Storage utility functions"""
-from decimal import Decimal
+from cdecimal import Decimal
 import random
 import uuid
-
-try:
-    decimal_from_float = Decimal.from_float
-except AttributeError:
-    # For Python < 2.7, use less precise repr() conversion,
-    # preserving only 15 decimal digits
-    def decimal_from_float(value):
-        return Decimal(repr(value))
 
 DECIMAL_1E7 = Decimal('1e7')
 
@@ -73,7 +65,7 @@ def convert_time_to_uuid(time_arg, lowest_val=True, randomize=False):  # pragma:
     if isinstance(time_arg, uuid.UUID):
         return time_arg
     if isinstance(time_arg, float):
-        time_arg = decimal_from_float(time_arg)
+        time_arg = Decimal.from_float(time_arg)
 
     ns_100 = int(time_arg * DECIMAL_1E7)
 

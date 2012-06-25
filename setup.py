@@ -18,6 +18,7 @@ reqs = [
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if not on_rtd:
     reqs.extend([
+        'cdecimal',
         'gunicorn',
         'pyramid',
         'webtest',
