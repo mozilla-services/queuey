@@ -53,7 +53,7 @@ if __name__ == '__main__':
     messages = [base64.b64encode(os.urandom(options.message_size)) for x in
                 range(options.messages)]
 
-    p = Pool(parser.concurrency)
+    p = Pool(options.concurrency)
     start = time.time()
     p.map(send_msg, messages)
     total = time.time() - start
