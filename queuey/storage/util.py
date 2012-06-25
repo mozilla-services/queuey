@@ -25,7 +25,7 @@ DECIMAL_1E7 = Decimal('1e7')
 # DEALINGS IN THE SOFTWARE.
 
 
-def convert_time_to_uuid(time_arg, lowest_val=True, randomize=False):  # pragma: nocover
+def convert_time_to_uuid(time_arg, lowest_val=True, randomize=False):
     """
     Converts a timestamp to a type 1 :class:`uuid.UUID`.
 
@@ -97,7 +97,7 @@ def convert_time_to_uuid(time_arg, lowest_val=True, randomize=False):  # pragma:
             clock_seq_hi_variant = 0 & 0x3fL  # The two most significant bits
                                               # will be 0 and 1, no matter what
             node = 0x808080808080L  # 48 bits
-        else:
+        else:  # pragma: nocover
             # Make the highest value UUID with the same timestamp
             clock_seq_low = 0x7fL
             clock_seq_hi_variant = 0x3fL  # The two most significant bits will
