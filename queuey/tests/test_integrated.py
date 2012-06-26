@@ -358,6 +358,25 @@ class TestQueueyBaseApp(unittest.TestCase):
         eq_('Yo', result['messages'][0]['body'])
         eq_('Yo', result['messages'][1]['body'])
 
+    def test_high_ttl(self):
+        app, queue_name = self._make_app_queue()
+        h = auth_header.copy()
+        h['X-TTL'] = str(2 ** 25)
+        resp = app.post('/v1/queuey/' + queue_name, 'Hello there!', headers=h)
+        result = json.loads(resp.body)
+        eq_(201, resp.status_int)
+        eq_('ok', result['status'])
+
+    def test_bad_ttl(self):
+        app, queue_name = self._make_app_queue()
+        h = auth_header.copy()
+        h['X-TTL'] = '0'
+        resp = app.post('/v1/queuey/' + queue_name, 'Hello there!', headers=h,
+                status=400)
+        result = json.loads(resp.body)
+        eq_('error', result['status'])
+        eq_(['ttl'], result['error_msg'].keys())
+
     def test_bad_partition(self):
         app, queue_name = self._make_app_queue()
         h = auth_header.copy()

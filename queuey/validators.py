@@ -96,7 +96,7 @@ class Message(colander.MappingSchema):
     partition = colander.SchemaNode(colander.Int(), missing=None,
                                     validator=max_queue_partition)
     ttl = colander.SchemaNode(colander.Int(), missing=60 * 60 * 24 * 3,
-                              validator=colander.Range(1, 60 * 60 * 24 * 3))
+                              validator=colander.Range(1, 2 ** 25))
 
 
 class MessageList(colander.SequenceSchema):
