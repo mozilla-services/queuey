@@ -1,6 +1,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
+from cdecimal import Decimal
 import inspect
 import uuid
 import time
@@ -19,6 +20,7 @@ ONE = pycassa.ConsistencyLevel.ONE
 QUORUM = pycassa.ConsistencyLevel.QUORUM
 LOCAL_QUORUM = pycassa.ConsistencyLevel.LOCAL_QUORUM
 EACH_QUORUM = pycassa.ConsistencyLevel.EACH_QUORUM
+DECIMAL_1E7 = Decimal('1e7')
 
 
 def parse_hosts(raw_hosts):
@@ -121,9 +123,12 @@ class CassandraQueueBackend(object):
             kwargs['column_count'] = limit
 
         if start_at:
-            if isinstance(start_at, str):
+            if isinstance(start_at, basestring):
                 # Assume its a hex, transform to a datetime
                 start_at = uuid.UUID(hex=start_at)
+            else:
+                # Assume its a float/decimal, convert to UUID
+                start_at = convert_time_to_uuid(start_at)
 
             kwargs['column_start'] = start_at
 
@@ -133,7 +138,7 @@ class CassandraQueueBackend(object):
         if delay:
             cut_off = time.time() - delay
             # Turn it into time in ns, for efficient comparison
-            cut_off = cut_off * 1e9 / 100 + 0x01b21dd213814000L
+            cut_off = int(cut_off * 1e7) + 0x01b21dd213814000L
 
         result_list = []
         msg_hash = {}
@@ -143,7 +148,8 @@ class CassandraQueueBackend(object):
                     continue
                 obj = {
                     'message_id': msg_id.hex,
-                    'timestamp': (msg_id.time - 0x01b21dd213814000L) / 1e7,
+                    'timestamp': (Decimal(msg_id.time - 0x01b21dd213814000L) /
+                        DECIMAL_1E7),
                     'body': body,
                     'metadata': {},
                     'queue_name': queue_name[queue_name.find(':'):]
@@ -162,9 +168,12 @@ class CassandraQueueBackend(object):
                  include_metadata=False):
         """Retrieve a single message"""
         cl = self.cl or self._get_cl(consistency)
-        if isinstance(message_id, str):
+        if isinstance(message_id, basestring):
             # Convert to uuid for lookup
             message_id = uuid.UUID(hex=message_id)
+        else:
+            # Assume its a float/decimal, convert to UUID
+            message_id = convert_time_to_uuid(message_id)
 
         kwargs = {
             'read_consistency_level': cl,
@@ -178,7 +187,8 @@ class CassandraQueueBackend(object):
 
         obj = {
             'message_id': msg_id.hex,
-            'timestamp': (msg_id.time - 0x01b21dd213814000L) / 1e7,
+            'timestamp': (Decimal(msg_id.time - 0x01b21dd213814000L) /
+                DECIMAL_1E7),
             'body': body,
             'metadata': {},
             'queue_name': queue_name[queue_name.find(':'):]
@@ -199,7 +209,7 @@ class CassandraQueueBackend(object):
         cl = self.cl or self._get_cl(consistency)
         if not timestamp:
             now = uuid.uuid1()
-        elif isinstance(timestamp, float):
+        elif isinstance(timestamp, (float, Decimal)):
             now = convert_time_to_uuid(timestamp, randomize=True)
         else:
             now = uuid.UUID(hex=timestamp)
@@ -214,7 +224,7 @@ class CassandraQueueBackend(object):
         else:
             self.message_fam.insert(key=queue_name, columns={now: message},
                                     ttl=ttl, write_consistency_level=cl)
-        timestamp = (now.time - 0x01b21dd213814000L) / 1e7
+        timestamp = Decimal(now.time - 0x01b21dd213814000L) / DECIMAL_1E7
         return now.hex, timestamp
 
     def push_batch(self, consistency, application_name, message_data):
@@ -229,7 +239,7 @@ class CassandraQueueBackend(object):
                          ttl=ttl)
             if metadata:
                 batch.insert(self.meta_fam, key=now, columns=metadata, ttl=ttl)
-            timestamp = (now.time - 0x01b21dd213814000L) / 1e7
+            timestamp = (Decimal(now.time - 0x01b21dd213814000L) / DECIMAL_1E7)
             msgs.append((now.hex, timestamp))
         batch.send()
         return msgs

@@ -142,11 +142,17 @@ Message Management
 ==================
 
 Create messages on a queue, get messages, and delete messages. Access varies
-depending on the queue, queues with a type of ``public`` 
+depending on the queue, queues with a type of ``public``
 may have messages viewed without any authentication. All other queue's require
 an Application key to create messages, and viewing messages varies depending
 on queue principles. By default an Application may create/view messages it
 creates unless a set of principles was registered for the queue.
+
+Responses containing messages include a message `timestamp`. The value is in
+seconds since the epoch in GMT. It uses a precision down to multiples of 100
+nanoseconds. The precision matches that of UUID1s used for the `message_id`.
+Note that double precision floating point numbers don't guarantee enough
+significant decimal digits to represent those numbers accurately.
 
 .. http:method:: GET /v1/{application}/{queue_name}
 
@@ -154,7 +160,8 @@ creates unless a set of principles was registered for the queue.
     :arg queue_name: Queue name to access
     :optparam since: All messages newer than this timestamp *or* message id.
                      Should be formatted as seconds since epoch in GMT, or the
-                     hexadecimal message ID.
+                     hexadecimal message id. For exact results with single
+                     message accuracy use the hexadecimal message id.
     :optparam limit: Only return N amount of messages.
     :optparam order: Order of messages, can be set to either `ascending` or
                      `descending`. Defaults to `ascending`.

@@ -129,8 +129,9 @@ class MessageQueueBackend(Interface):
         :param ttl: Time to Live in seconds for the message, after this
                     period the message should be unavilable
         :param timestamp: The timestamp to use for the message, should be
-                          a float of seconds since the epoch as time.time()
-                          would return. Defaults to the current time.
+                          either a `uuid.uuid1` or a decimal/float of seconds
+                          since the epoch as time.time() would return.
+                          Defaults to the current time.
 
         :returns: The message id and timestamp as a tuple
         :rtype: tuple

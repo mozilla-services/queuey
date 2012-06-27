@@ -56,7 +56,7 @@ class TestQueueyBaseApp(unittest.TestCase):
         result = json.loads(resp.body)
         eq_('ok', result['status'])
 
-    def test_queue_and_get_since_ts(self):
+    def test_queue_and_get_since_message_id(self):
         app, queue_name = self._make_app_queue()
 
         # Post a message
@@ -72,16 +72,13 @@ class TestQueueyBaseApp(unittest.TestCase):
                  'Hello there! 3', headers=auth_header)
 
         # Fetch the messages
-        resp = app.get('/v1/queuey/' + queue_name, {'since': msg_ts},
+        resp = app.get('/v1/queuey/' + queue_name, {'since': msg_id},
                        headers=auth_header)
         result = json.loads(resp.body)
         if len(result['messages']) != 2:
+            print msg_id
             print msg_ts
             print result
-            from queuey.storage.util import convert_time_to_uuid
-            import uuid
-            print 'query  ', convert_time_to_uuid(float(msg_ts)).time
-            print 'message', uuid.UUID(msg_id).time
 
         eq_(2, len(result['messages']))
         msg = result['messages'][0]

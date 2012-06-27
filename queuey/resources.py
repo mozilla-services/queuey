@@ -2,13 +2,14 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 import collections
+from cdecimal import Decimal
 import re
 
 from pyramid.security import Allow
 from pyramid.security import Everyone
 
 
-FLOAT_REGEX = re.compile(r'^\d+(\.\d+)?')
+DECIMAL_REGEX = re.compile(r'^\d+(\.\d+)?$')
 MESSAGE_REGEX = re.compile(
     r'(?:\d\:)?[a-zA-Z0-9]{32}(?:\,(?:\d{1,3}\:)?[a-zA-Z0-9]{32}){0,}'
 )
@@ -33,7 +34,7 @@ def transform_stored_message(message):
     del message['metadata']
     message['partition'] = int(message['queue_name'].split(':')[-1])
     del message['queue_name']
-    message['timestamp'] = repr(message['timestamp'])
+    message['timestamp'] = str(message['timestamp'])
 
 
 class Root(object):
@@ -188,7 +189,7 @@ class Queue(object):
                                           msgs)
         rl = []
         for i, msg in enumerate(results):
-            rl.append({'key': msg[0], 'timestamp': repr(msg[1]),
+            rl.append({'key': msg[0], 'timestamp': str(msg[1]),
                        'partition': messages[i]['partition']})
         self.metlog.incr('%s.new_message' % self.application,
                          count=len(results))
@@ -198,8 +199,8 @@ class Queue(object):
         queue_names = []
         for part in partitions:
             queue_names.append('%s:%s' % (self.queue_name, part))
-        if since and FLOAT_REGEX.match(since):
-            since = float(since)
+        if since and DECIMAL_REGEX.match(since):
+            since = Decimal(since)
         results = self.storage.retrieve_batch(
             self.consistency, self.application, queue_names, start_at=since,
             limit=limit, order=order)
