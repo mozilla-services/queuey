@@ -20,7 +20,8 @@ else
 endif
 INSTALL = $(HERE)/bin/pip install
 PIP_DOWNLOAD_CACHE ?= /tmp/pip_cache
-INSTALLOPTIONS = --download-cache $(PIP_DOWNLOAD_CACHE) -U -i $(PYPI)
+INSTALLOPTIONS = --download-cache $(PIP_DOWNLOAD_CACHE) -U -i $(PYPI) \
+	--use-mirrors
 
 CASS_SERVER = localhost
 
