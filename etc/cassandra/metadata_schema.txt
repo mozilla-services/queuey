@@ -7,6 +7,7 @@ use MetadataStore;
 create column family ApplicationQueueData
     with comparator = UTF8Type
     and key_validation_class = UTF8Type
+    and caching = all
     and default_validation_class = CounterColumnType
     and column_metadata = [{
         column_name: queue_count,
@@ -16,11 +17,7 @@ create column family ApplicationQueueData
 create column family Queues
     with comparator = UTF8Type
     and key_validation_class = UTF8Type
-    and rows_cached = 1000
-    and compression_options = [{
-        sstable_compression: SnappyCompressor,
-        chunk_length_kb: 64
-    }]
+    and caching = all
     and column_metadata = [{
         column_name: partitions,
         validation_class: IntegerType

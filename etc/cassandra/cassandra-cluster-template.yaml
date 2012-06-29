@@ -40,7 +40,6 @@ flush_largest_memtables_at: 0.75
 reduce_cache_sizes_at: 0.85
 reduce_cache_capacity_to: 0.6
 memtable_flush_queue_size: 4
-sliced_buffer_size_in_kb: 64
 storage_port: 7000
 
 rpc_port: 9160
