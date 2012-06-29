@@ -181,7 +181,7 @@ class CassandraQueueBackend(object):
         queue_name = '%s:%s' % (application_name, queue_name)
         try:
             results = self.message_fam.get(key=queue_name, **kwargs)
-        except pycassa.NotFoundException:
+        except (pycassa.NotFoundException, pycassa.InvalidRequestException):
             return {}
         msg_id, body = results.items()[0]
 
