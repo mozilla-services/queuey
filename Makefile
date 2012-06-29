@@ -24,7 +24,7 @@ INSTALLOPTIONS = --download-cache $(PIP_DOWNLOAD_CACHE) -U -i $(PYPI) \
 	--use-mirrors
 
 CASS_SERVER = localhost
-CASSANDRA_VERSION = 1.1.1
+CASSANDRA_VERSION = 1.1.0
 
 ifdef PYPIEXTRAS
 	PYPIOPTIONS += -e $(PYPIEXTRAS)
@@ -69,8 +69,8 @@ $(CASSANDRA):
 	@echo "Installing Cassandra"
 	mkdir -p bin
 	cd bin && \
-	curl --silent http://archive.apache.org/dist/cassandra/$(CASSANDRA_VERSION)/apache-cassandra-$(CASSANDRA_VERSION)-bin.tar.gz | tar -zx >/dev/null 2>&1
-	mv bin/apache-cassandra-$(CASSANDRA_VERSION) bin/cassandra
+	curl --silent http://downloads.datastax.com/community/dsc-cassandra-$(CASSANDRA_VERSION)-bin.tar.gz | tar -zx >/dev/null 2>&1
+	mv bin/dsc-cassandra-$(CASSANDRA_VERSION) bin/cassandra
 	cp etc/cassandra/cassandra.yaml bin/cassandra/conf/cassandra.yaml
 	cp etc/cassandra/log4j-server.properties bin/cassandra/conf/log4j-server.properties
 	cd bin/cassandra/lib && \
