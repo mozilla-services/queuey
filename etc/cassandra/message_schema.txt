@@ -7,13 +7,11 @@ use MessageStore;
 create column family Messages
     with comparator = UUIDType
     and key_validation_class = UTF8Type
-    and default_validation_class = UTF8Type
-    and rows_cached = 100;
+    and default_validation_class = UTF8Type;
 
 create column family MessageMetadata
     with comparator = UTF8Type
     and key_validation_class = UUIDType
-    and rows_cached = 1000
     and default_validation_class = UTF8Type
     and compression_options = [{
         sstable_compression: SnappyCompressor,
