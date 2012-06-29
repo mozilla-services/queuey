@@ -9,6 +9,7 @@ branches:
 notifications:
   email:
     - ben@groovie.org
+    - hschlichting@mozilla.com
   irc: "irc.mozilla.org#services-dev"
 
 before_install:
