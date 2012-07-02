@@ -24,7 +24,7 @@ INSTALLOPTIONS = --download-cache $(PIP_DOWNLOAD_CACHE) -U -i $(PYPI) \
 	--use-mirrors
 
 CASS_SERVER = localhost
-CASSANDRA_VERSION = 1.1.0
+CASSANDRA_VERSION = 1.1.1
 
 ifdef PYPIEXTRAS
 	PYPIOPTIONS += -e $(PYPIEXTRAS)
