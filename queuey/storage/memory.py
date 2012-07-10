@@ -259,7 +259,9 @@ class MemoryMetadata(object):
 
     def queue_list(self, application_name, limit=100, offset=None):
         """Return list of queues"""
-        app = metadata_store.get(application_name)
+        app = metadata_store.get(application_name, None)
+        if app is None:
+            return []
         if offset:
             queues = filter(lambda x: x >= offset,
                             sorted(app.queues.keys()))
