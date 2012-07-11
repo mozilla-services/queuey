@@ -55,7 +55,7 @@ BUILD_DIRS = bin build deps include lib lib64
 all:	build
 
 $(BIN)/python:
-	python $(SW)/virtualenv.py --no-site-packages --distribute . >/dev/null 2>&1
+	python $(SW)/virtualenv.py . >/dev/null 2>&1
 
 $(BIN)/pip: $(BIN)/python
 
