@@ -23,6 +23,7 @@ bin/
 lib/
 man/
 include/
+share/
 deps
 docs/_build
 zookeeper.out
