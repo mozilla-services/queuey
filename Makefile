@@ -86,8 +86,8 @@ clean-cassandra:
 	rm -rf cassandra bin/cassandra
 
 init-cassandra:
-	$(CASSANDRA)-cli --host $(CASS_SERVER) --file etc/cassandra/message_schema.txt 
-	$(CASSANDRA)-cli --host $(CASS_SERVER) --file etc/cassandra/metadata_schema.txt 
+	$(CASSANDRA)-cli --host $(CASS_SERVER) --file etc/cassandra/message_schema.txt
+	$(CASSANDRA)-cli --host $(CASS_SERVER) --file etc/cassandra/metadata_schema.txt
 
 clean:	clean-env
 
