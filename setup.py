@@ -19,11 +19,16 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if not on_rtd:
     reqs.extend([
         'cdecimal',
+        'colander',
         'gunicorn',
-        'pyramid',
-        'webtest',
-        'thrift',
+        'metlog-py',
+        'mozsvc',
         'pycassa',
+        'pyramid',
+        'thrift',
+        'ujson',
+        'webtest',
+        'zope.interface',
     ])
 else:
     # Ensure if we *are* on RTD, we include the plugin we need
