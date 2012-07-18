@@ -5,8 +5,12 @@
 
 import os
 import sys
+import time
 from contextlib import contextmanager
 
+import pycassa
+
+from queuey.storage.cassandra import parse_hosts
 from queuey.testing import setup
 
 
@@ -24,9 +28,19 @@ def supervisor():
 
 
 def main():
-    ret = 0
+    ret = 1
+    host = os.environ.get('TEST_CASSANDRA_HOST', '127.0.0.1')
+    hosts = parse_hosts(host)
     with supervisor():
         setup(40)
+        while 1:
+            try:
+                pycassa.ConnectionPool(
+                    keyspace='MessageStore', server_list=hosts)
+                break
+            except pycassa.AllServersUnavailable:
+                time.sleep(0.1)
+                print(u'Waiting on connection pool for 0.1 seconds.')
         ret = os.system('make test-python')
     sys.exit(ret)
 
