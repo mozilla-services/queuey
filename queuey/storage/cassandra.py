@@ -9,6 +9,7 @@ import time
 import pycassa
 from pycassa.index import create_index_expression
 from pycassa.index import create_index_clause
+from pycassa import system_manager
 from zope.interface import implements
 
 from queuey.storage import MessageQueueBackend
@@ -356,3 +357,88 @@ class CassandraMetadata(object):
         for queue in queue_names:
             results.append(queues.get(queue, {}))
         return results
+
+
+class Schema(object):
+
+    COUNTER_COLUMN_TYPE = system_manager.COUNTER_COLUMN_TYPE
+    INT_TYPE = system_manager.INT_TYPE
+    FLOAT_TYPE = system_manager.FLOAT_TYPE
+    KEYS_INDEX = system_manager.KEYS_INDEX
+    LONG_TYPE = system_manager.LONG_TYPE
+    UTF8_TYPE = system_manager.UTF8_TYPE
+    TIME_UUID_TYPE = system_manager.TIME_UUID_TYPE
+
+    def __init__(self, host='localhost:9160'):
+        self.host = host
+        self.sm = system_manager.SystemManager(self.host)
+
+    def install(self):
+        keyspaces = self.sm.list_keyspaces()
+        self.install_message(keyspaces)
+        self.install_metadata(keyspaces)
+        self.close()
+
+    def install_message(self, keyspaces):
+        sm = self.sm
+        if 'MessageStore' not in keyspaces:
+            sm.create_keyspace('MessageStore',
+                system_manager.SIMPLE_STRATEGY, {'replication_factor': '1'})
+
+        cfs = sm.get_keyspace_column_families('MessageStore')
+        if 'Messages' not in cfs:
+            sm.create_column_family('MessageStore', 'Messages',
+                comparator_type=self.TIME_UUID_TYPE,
+                default_validation_class=self.UTF8_TYPE,
+                key_validation_class=self.UTF8_TYPE,
+            )
+
+        if 'MessageMetadata' not in cfs:
+            sm.create_column_family('MessageStore', 'MessageMetadata',
+                comparator_type=self.UTF8_TYPE,
+                default_validation_class=self.UTF8_TYPE,
+                key_validation_class=self.TIME_UUID_TYPE,
+                column_validation_classes={
+                    'ContentType': self.UTF8_TYPE,
+                    'ContentLength': self.LONG_TYPE,
+                    }
+            )
+
+    def install_metadata(self, keyspaces):
+        sm = self.sm
+        if 'MetadataStore' not in keyspaces:
+            sm.create_keyspace('MetadataStore',
+                system_manager.SIMPLE_STRATEGY, {'replication_factor': '1'})
+
+        cfs = sm.get_keyspace_column_families('MetadataStore')
+        if 'ApplicationQueueData' not in cfs:
+            sm.create_column_family('MetadataStore', 'ApplicationQueueData',
+                comparator_type=self.UTF8_TYPE,
+                default_validation_class=self.COUNTER_COLUMN_TYPE,
+                key_validation_class=self.UTF8_TYPE,
+                caching='all',
+                column_validation_classes={
+                    'queue_count': self.COUNTER_COLUMN_TYPE,
+                    }
+            )
+
+        if 'Queues' not in cfs:
+            sm.create_column_family('MetadataStore', 'Queues',
+                comparator_type=self.UTF8_TYPE,
+                key_validation_class=self.UTF8_TYPE,
+                caching='all',
+                column_validation_classes={
+                    'partitions': self.INT_TYPE,
+                    'application': self.UTF8_TYPE,
+                    'created': self.FLOAT_TYPE,
+                    'type': self.UTF8_TYPE,
+                    'consistency': self.UTF8_TYPE,
+                    }
+            )
+            sm.create_index('MetadataStore', 'Queues', 'application',
+                self.UTF8_TYPE, index_type=self.KEYS_INDEX)
+            sm.create_index('MetadataStore', 'Queues', 'type',
+                self.UTF8_TYPE, index_type=self.KEYS_INDEX)
+
+    def close(self):
+        self.sm.close()

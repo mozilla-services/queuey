@@ -8,10 +8,11 @@ import sys
 import time
 from contextlib import contextmanager
 
-import pycassa
+from thrift.transport.TTransport import TTransportException
 
 from queuey.testing import setup
 from queuey.storage.cassandra import parse_hosts
+from queuey.storage.cassandra import Schema
 
 
 @contextmanager
@@ -33,19 +34,15 @@ def main():
     host = os.environ.get('TEST_CASSANDRA_HOST', '127.0.0.1')
     hosts = parse_hosts(host)
     with supervisor():
+        setup(40)
         while 1:
-            setup(40)
             try:
-                pycassa.ConnectionPool(keyspace='MessageStore', server_list=hosts)
+                Schema(hosts[0]).install()
+                time.sleep(0.2)
                 break
-            except pycassa.InvalidRequestException as m:
-                if 'Keyspace MessageStore does not exist' in m.why:
-                    lhost = hosts[0].split(':')[0]
-                    os.system('bin/cassandra/bin/cassandra-cli -host %s --file etc/cassandra/message_schema.txt' % lhost)
-                    os.system('bin/cassandra/bin/cassandra-cli -host %s --file etc/cassandra/metadata_schema.txt' % lhost)
-                break
-            except pycassa.AllServersUnavailable:
-                time.sleep(1)
+            except TTransportException:
+                print(u'Waiting on system manager for 0.1 seconds.')
+                time.sleep(0.1)
         ret = os.system('make test-python')
     sys.exit(ret)
 
