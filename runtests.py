@@ -38,9 +38,12 @@ def main():
                 pycassa.ConnectionPool(
                     keyspace='MessageStore', server_list=hosts)
                 break
+            except pycassa.InvalidRequestException:
+                # successful connection but missing schema
+                break
             except pycassa.AllServersUnavailable:
-                time.sleep(0.1)
-                print(u'Waiting on connection pool for 0.1 seconds.')
+                time.sleep(0.2)
+                print(u'Waiting on connection pool for 0.2 seconds.')
         ret = os.system('make test-python')
     sys.exit(ret)
 
