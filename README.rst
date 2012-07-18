@@ -89,12 +89,6 @@ The default (Cassandra) stores its data and files inside the local cassandra
 directory so as not to interfere with any existing Cassandra installations on
 the system.
 
-In addition, you'll need to start Cassandra (See: Running the Cassandra Server)
-and create the schema::
-
-    bin/cassandra/bin/cassandra-cli --host localhost --file etc/cassandra/message_schema.txt
-    bin/cassandra/bin/cassandra-cli --host localhost --file etc/cassandra/metadata_schema.txt
-
 Running
 =======
 
@@ -125,7 +119,9 @@ This will prevent accidental loss of configuration during an update.
 Troubleshooting:
 ----------------
 
-"Upgrading" queuey may require reinitializing the schema. To reinitialize the schema
+"Upgrading" queuey may require reinitializing the schema. To reinitialize the
+schema, remove all data files. The new correct schema will be automatically
+created during the next Queuey startup.
 
 1. Stop Cassandra
 
@@ -144,11 +140,4 @@ Troubleshooting:
 ::
 
    ./bin/cassandra/bin/cassandra -p cassandra.pid
-
-4. reinitialize cassandra
-
-::
-
-    bin/cassandra/bin/cassandra-cli --host localhost --file etc/cassandra/message_schema.txt
-    bin/cassandra/bin/cassandra-cli --host localhost --file etc/cassandra/metadata_schema.txt
 
