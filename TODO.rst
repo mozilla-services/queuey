@@ -3,10 +3,13 @@ TODO List
 
 Utilities
 ---------
+
 - Create load testing script
 
 Features
 --------
+
+- Config file option to turn off automatic C* schema creation
 - Ability to designate queues on creation, instead of auto-assigned
 - Metlog stats/reporting functionality
 - Application assertion checking, app-keys loaded from a file
