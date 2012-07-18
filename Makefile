@@ -69,12 +69,12 @@ $(CASSANDRA):
 	@echo "Installing Cassandra"
 	mkdir -p bin
 	cd bin && \
-	curl --silent http://downloads.datastax.com/community/dsc-cassandra-$(CASSANDRA_VERSION)-bin.tar.gz | tar -zx >/dev/null 2>&1
+	curl --silent http://downloads.datastax.com/community/dsc-cassandra-$(CASSANDRA_VERSION)-bin.tar.gz | tar -zx
 	mv bin/dsc-cassandra-$(CASSANDRA_VERSION) bin/cassandra
 	cp etc/cassandra/cassandra.yaml bin/cassandra/conf/cassandra.yaml
 	cp etc/cassandra/log4j-server.properties bin/cassandra/conf/log4j-server.properties
 	cd bin/cassandra/lib && \
-	curl --silent -O http://java.net/projects/jna/sources/svn/content/trunk/jnalib/dist/jna.jar >/dev/null 2>&1
+	curl --silent -O http://java.net/projects/jna/sources/svn/content/trunk/jnalib/dist/jna.jar
 	@echo "Finished installing Cassandra"
 
 cassandra: $(CASSANDRA)
