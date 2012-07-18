@@ -10,6 +10,7 @@ import pycassa
 from pycassa.index import create_index_expression
 from pycassa.index import create_index_clause
 from pycassa import system_manager
+from thrift.Thrift import TException
 from zope.interface import implements
 
 from queuey.storage import MessageQueueBackend
@@ -66,7 +67,8 @@ class CassandraQueueBackend(object):
     implements(MessageQueueBackend)
 
     def __init__(self, username=None, password=None, database='MessageStore',
-                 host='localhost', base_delay=None, multi_dc=False):
+                 host='localhost', base_delay=None, multi_dc=False,
+                 create_schema=True):
         """Create a Cassandra backend for the Message Queue
 
         :param host: Hostname, accepts either an IP, hostname, hostname:port,
@@ -74,6 +76,8 @@ class CassandraQueueBackend(object):
 
         """
         hosts = parse_hosts(host)
+        if create_schema:
+            self._create_schema(hosts[0])
         self.pool = pool = pycassa.ConnectionPool(
             keyspace=database,
             server_list=hosts,
@@ -83,6 +87,14 @@ class CassandraQueueBackend(object):
         self.delay = int(base_delay) if base_delay else 0
         self.cl = ONE if len(hosts) < 2 else None
         self.multi_dc = multi_dc
+
+    def _create_schema(self, host):
+        try:
+            sm = Schema(host)
+            sm.install_message()
+            sm.close()
+        except TException:
+            pass
 
     def _get_cl(self, consistency):
         """Return the consistency operation to use"""
@@ -274,7 +286,7 @@ class CassandraMetadata(object):
     implements(MetadataBackend)
 
     def __init__(self, username=None, password=None, database='MetadataStore',
-                 host='localhost', multi_dc=False):
+                 host='localhost', multi_dc=False, create_schema=True):
         """Create a Cassandra backend for the Message Queue
 
         :param host: Hostname, accepts either an IP, hostname, hostname:port,
@@ -282,6 +294,8 @@ class CassandraMetadata(object):
 
         """
         hosts = parse_hosts(host)
+        if create_schema:
+            self._create_schema(hosts[0])
         self.pool = pool = pycassa.ConnectionPool(
             keyspace=database,
             server_list=hosts,
@@ -290,6 +304,14 @@ class CassandraMetadata(object):
         self.queue_fam = pycassa.ColumnFamily(pool, 'Queues')
         self.cl = ONE if len(hosts) < 2 else None
         self.multi_dc = multi_dc
+
+    def _create_schema(self, host):
+        try:
+            sm = Schema(host)
+            sm.install_metadata()
+            sm.close()
+        except TException:
+            pass
 
     def register_queue(self, application_name, queue_name, **metadata):
         """Register a queue, optionally with metadata"""
@@ -374,13 +396,13 @@ class Schema(object):
         self.sm = system_manager.SystemManager(self.host)
 
     def install(self):
-        keyspaces = self.sm.list_keyspaces()
-        self.install_message(keyspaces)
-        self.install_metadata(keyspaces)
+        self.install_message()
+        self.install_metadata()
         self.close()
 
-    def install_message(self, keyspaces):
+    def install_message(self):
         sm = self.sm
+        keyspaces = sm.list_keyspaces()
         if 'MessageStore' not in keyspaces:
             sm.create_keyspace('MessageStore',
                 system_manager.SIMPLE_STRATEGY, {'replication_factor': '1'})
@@ -404,8 +426,9 @@ class Schema(object):
                     }
             )
 
-    def install_metadata(self, keyspaces):
+    def install_metadata(self):
         sm = self.sm
+        keyspaces = sm.list_keyspaces()
         if 'MetadataStore' not in keyspaces:
             sm.create_keyspace('MetadataStore',
                 system_manager.SIMPLE_STRATEGY, {'replication_factor': '1'})
