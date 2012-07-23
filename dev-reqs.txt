@@ -40,4 +40,4 @@ z3c.checkversions==0.4.1
 zope.deprecation==4.0.0
 zope.interface==4.0.1
 
--e git://github.com/hannosch/pycassa.git@c11-exception-changes#egg=pycassa
+-e git://github.com/pycassa/pycassa.git#egg=pycassa
