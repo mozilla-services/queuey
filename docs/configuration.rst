@@ -85,11 +85,9 @@ host
 
 username
     A username used for connecting to Cassandra's Thrift interface.
-    Currently this value is ignored.
 
 password
     A password used for connecting to Cassandra's Thrift interface.
-    Currently this value is ignored.
 
 multi_dc
     A boolean indicating whether or not Cassandra runs in a multi-datacenter

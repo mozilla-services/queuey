@@ -78,9 +78,13 @@ class CassandraQueueBackend(object):
         hosts = parse_hosts(host)
         if create_schema:
             self._create_schema(hosts[0])
+        credentials = None
+        if username and password is not None:
+            credentials = dict(username=username, password=password)
         self.pool = pool = pycassa.ConnectionPool(
             keyspace=database,
             server_list=hosts,
+            credentials=credentials,
         )
         self.message_fam = pycassa.ColumnFamily(pool, 'Messages')
         self.meta_fam = pycassa.ColumnFamily(pool, 'MessageMetadata')
@@ -296,9 +300,13 @@ class CassandraMetadata(object):
         hosts = parse_hosts(host)
         if create_schema:
             self._create_schema(hosts[0])
+        credentials = None
+        if username and password is not None:
+            credentials = dict(username=username, password=password)
         self.pool = pool = pycassa.ConnectionPool(
             keyspace=database,
             server_list=hosts,
+            credentials=credentials,
         )
         self.metric_fam = pycassa.ColumnFamily(pool, 'ApplicationQueueData')
         self.queue_fam = pycassa.ColumnFamily(pool, 'Queues')

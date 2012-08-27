@@ -19,7 +19,7 @@ class TestCassandraStore(StorageTestMessageBase):
     def _makeOne(self, **kwargs):
         from queuey.storage.cassandra import CassandraQueueBackend
         host = os.environ.get('TEST_CASSANDRA_HOST', 'localhost')
-        return CassandraQueueBackend(host, **kwargs)
+        return CassandraQueueBackend(host=host, **kwargs)
 
     def test_parsehosts(self):
         from queuey.storage.cassandra import parse_hosts
@@ -29,6 +29,11 @@ class TestCassandraStore(StorageTestMessageBase):
         hosts = parse_hosts('192.168.2.1,192.168.2.3:9180 , 192.168.2.19')
         eq_(hosts,
             ['192.168.2.1:9160', '192.168.2.3:9180', '192.168.2.19:9160'])
+
+    def test_credentials(self):
+        creds = dict(username='foo', password='foo')
+        backend = self._makeOne(**creds)
+        eq_(backend.pool.credentials, creds)
 
     def test_cl(self):
         backend = self._makeOne()
@@ -84,10 +89,16 @@ class TestCassandraStore(StorageTestMessageBase):
 
 
 class TestCassandraMetadata(StorageTestMetadataBase):
-    def _makeOne(self):
+    def _makeOne(self, **kwargs):
         from queuey.storage.cassandra import CassandraMetadata
         host = os.environ.get('TEST_CASSANDRA_HOST', 'localhost')
-        return CassandraMetadata(host)
+        return CassandraMetadata(host=host, **kwargs)
+
+    def test_credentials(self):
+        creds = dict(username='foo', password='foo')
+        backend = self._makeOne(**creds)
+        eq_(backend.pool.credentials, creds)
+
 
 del StorageTestMessageBase
 del StorageTestMetadataBase
