@@ -24,6 +24,18 @@ therefor also apply to Queuey. The
 `Pyramid cookbook <http://docs.pylonsproject.org/projects/pyramid_cookbook/en/latest/deployment/index.html>`_
 contains some advice on a variety of web servers.
 
+The simplest example of a Pyramid pipeline contains of the following::
+
+    [app:pyramidapp]
+    use = egg:queuey
+
+    [filter:catcherror]
+    paste.filter_app_factory = mozsvc.middlewares:make_err_mdw
+
+    [pipeline:main]
+    pipeline = catcherror
+               pyramidapp
+
 Queuey
 ======
 
