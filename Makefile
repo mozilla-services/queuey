@@ -61,7 +61,7 @@ $(BIN)/pip: $(BIN)/python
 
 lib: $(BIN)/pip
 	echo "Installing package pre-requisites..."
-	$(INSTALL) -r dev-reqs.txt
+	$(INSTALL) -r requirements.txt
 	echo "Running setup.py develop"
 	$(PYTHON) setup.py develop
 
