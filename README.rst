@@ -57,7 +57,7 @@ installed before proceeding:
 - Java 1.6
 - Ant
 - Make
-- Python 2.6 (with virtualenv installed)
+- Python 2.7 (with virtualenv installed)
 
 
 Installation
