@@ -129,12 +129,12 @@ created during the next Queuey startup.
 
 1. Stop Cassandra::
 
-   kill -2 `cat cassandra.pid`
+    kill -2 `cat cassandra.pid`
 
 2. Remove the Cassandra data directory (not the Cassandra binary directory)::
 
-   rm -rf ./cassandra
+    rm -rf ./cassandra
 
 3. Start Cassandra::
 
-   ./bin/cassandra/bin/cassandra -p cassandra.pid
+    ./bin/cassandra/bin/cassandra -p cassandra.pid
