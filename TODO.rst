@@ -9,7 +9,6 @@ Utilities
 Features
 --------
 
-- Config file option to turn off automatic C* schema creation
 - Metlog stats/reporting functionality
 - Application assertion checking, app-keys loaded from a file
 - Supply Authorization: Browser-ID TOKEN for queue creation, reading, removal
