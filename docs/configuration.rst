@@ -27,4 +27,13 @@ contains some advice on a variety of web servers.
 Queuey
 ======
 
-TODO - not yet written
+Queuey is configured via an ini-style file, which is also used to configure
+general Pyramid settings. This ini file contains a number of sections. The
+following sections contain Queuey specific settings.
+
+
+[metlog]
+--------
+
+Queuey uses metlog for logging metrics. For detailed information see the
+`metlog docs <http://metlog-py.readthedocs.org/en/latest/config.html>`_.
