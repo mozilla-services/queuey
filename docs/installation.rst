@@ -4,16 +4,16 @@
 Installation
 ============
 
-Queuey is composed of two main parts, the queuey Python web application and
-the back-end storage layer used by the web application which defaults to 
+Queuey is composed of two main parts, the Queuey Python web application and
+the back-end storage layer used by the web application which defaults to
 Cassandra_.
 
 Cassandra_ can be setup either as a single node, or preferably as a cluster
-for higher throughput, availability, and durability. The queuey web application
+for higher throughput, availability, and durability. The Queuey web application
 should ideally be installed on separate web nodes to avoid sharing resources
 with Cassandra_ but in smaller setups should be fine on the same node.
 
-Installing the queuey web application
+Installing the Queuey web application
 =====================================
 
 Using the source
@@ -21,10 +21,10 @@ Using the source
 
 Pre-requisites:
 
-- python >2.6
+- Python >=2.6
 - Make
 
-Checkout the source and build using git from github:
+Checkout the source and build using git from Github:
 
 .. code-block:: bash
 
@@ -32,12 +32,7 @@ Checkout the source and build using git from github:
     make
 
 This will setup a new virtualenv in this directory with all the other tools
-installed that queuey needs to run.
-
-
-Via RPM's
----------
-
+installed that Queuey needs to run.
 
 Installing Cassandra
 ====================
@@ -66,7 +61,7 @@ You can check to see what version of Java is available by running:
 Which should print something like:
 
 .. code-block:: bash
-    
+
     Java(TM) SE Runtime Environment (build 1.6.0_29-b11-402-11D50b)
 
 If you're using an OpenJDK Java version, see the Datastax_ site for
@@ -79,15 +74,15 @@ and node information for the opscenter dashboard.
 Using the source
 ----------------
 
-If you installed queuey using ``make`` above and Cassandra_ is being installed
-on the queuey node, the Makefile includes Cassandra_ setup:
+If you installed Queuey using ``make`` above and Cassandra_ is being installed
+on the Queuey node, the Makefile includes Cassandra_ setup:
 
 .. code-block:: bash
 
     make cassandra
 
 If setting up a cluster, or not installing Cassandra_ on the same node as the
-queuey webapp the following directions should be used. Also note that this
+Queuey webapp the following directions should be used. Also note that this
 step does not install opscenter, which also requires the following.
 
 Download the source tarball to the desired directory:
