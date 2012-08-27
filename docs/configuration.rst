@@ -97,8 +97,7 @@ multi_dc
 create_schema
     A boolean value indicating if the required Cassandra schema should be
     automatically created during startup. Defaults to `True`. If enabled the
-    first server in the host list is used and the keyspace names are
-    hard-coded to their defaults.
+    first server in the host list is used to create the schema.
 
 database
     The name of the keyspace, defaults to `MessageStore` for the storage and

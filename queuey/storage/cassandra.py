@@ -77,7 +77,7 @@ class CassandraQueueBackend(object):
         """
         hosts = parse_hosts(host)
         if create_schema:
-            self._create_schema(hosts[0])
+            self._create_schema(hosts[0], database)
         credentials = None
         if username and password is not None:
             credentials = dict(username=username, password=password)
@@ -92,10 +92,10 @@ class CassandraQueueBackend(object):
         self.cl = ONE if len(hosts) < 2 else None
         self.multi_dc = multi_dc
 
-    def _create_schema(self, host):
+    def _create_schema(self, host, database):
         try:
             sm = Schema(host)
-            sm.install_message()
+            sm.install_message(database)
             sm.close()
         except TException:
             pass
@@ -299,7 +299,7 @@ class CassandraMetadata(object):
         """
         hosts = parse_hosts(host)
         if create_schema:
-            self._create_schema(hosts[0])
+            self._create_schema(hosts[0], database)
         credentials = None
         if username and password is not None:
             credentials = dict(username=username, password=password)
@@ -313,10 +313,10 @@ class CassandraMetadata(object):
         self.cl = ONE if len(hosts) < 2 else None
         self.multi_dc = multi_dc
 
-    def _create_schema(self, host):
+    def _create_schema(self, host, database):
         try:
             sm = Schema(host)
-            sm.install_metadata()
+            sm.install_metadata(database)
             sm.close()
         except TException:
             pass
@@ -408,23 +408,23 @@ class Schema(object):
         self.install_metadata()
         self.close()
 
-    def install_message(self):
+    def install_message(self, database='MessageStore'):
         sm = self.sm
         keyspaces = sm.list_keyspaces()
-        if 'MessageStore' not in keyspaces:
-            sm.create_keyspace('MessageStore',
+        if database not in keyspaces:
+            sm.create_keyspace(database,
                 system_manager.SIMPLE_STRATEGY, {'replication_factor': '1'})
 
-        cfs = sm.get_keyspace_column_families('MessageStore')
+        cfs = sm.get_keyspace_column_families(database)
         if 'Messages' not in cfs:
-            sm.create_column_family('MessageStore', 'Messages',
+            sm.create_column_family(database, 'Messages',
                 comparator_type=self.TIME_UUID_TYPE,
                 default_validation_class=self.UTF8_TYPE,
                 key_validation_class=self.UTF8_TYPE,
             )
 
         if 'MessageMetadata' not in cfs:
-            sm.create_column_family('MessageStore', 'MessageMetadata',
+            sm.create_column_family(database, 'MessageMetadata',
                 comparator_type=self.UTF8_TYPE,
                 default_validation_class=self.UTF8_TYPE,
                 key_validation_class=self.TIME_UUID_TYPE,
@@ -434,16 +434,16 @@ class Schema(object):
                     }
             )
 
-    def install_metadata(self):
+    def install_metadata(self, database='MetadataStore'):
         sm = self.sm
         keyspaces = sm.list_keyspaces()
-        if 'MetadataStore' not in keyspaces:
-            sm.create_keyspace('MetadataStore',
+        if database not in keyspaces:
+            sm.create_keyspace(database,
                 system_manager.SIMPLE_STRATEGY, {'replication_factor': '1'})
 
-        cfs = sm.get_keyspace_column_families('MetadataStore')
+        cfs = sm.get_keyspace_column_families(database)
         if 'ApplicationQueueData' not in cfs:
-            sm.create_column_family('MetadataStore', 'ApplicationQueueData',
+            sm.create_column_family(database, 'ApplicationQueueData',
                 comparator_type=self.UTF8_TYPE,
                 default_validation_class=self.COUNTER_COLUMN_TYPE,
                 key_validation_class=self.UTF8_TYPE,
@@ -454,7 +454,7 @@ class Schema(object):
             )
 
         if 'Queues' not in cfs:
-            sm.create_column_family('MetadataStore', 'Queues',
+            sm.create_column_family(database, 'Queues',
                 comparator_type=self.UTF8_TYPE,
                 key_validation_class=self.UTF8_TYPE,
                 caching='all',
@@ -466,9 +466,9 @@ class Schema(object):
                     'consistency': self.UTF8_TYPE,
                     }
             )
-            sm.create_index('MetadataStore', 'Queues', 'application',
+            sm.create_index(database, 'Queues', 'application',
                 self.UTF8_TYPE, index_type=self.KEYS_INDEX)
-            sm.create_index('MetadataStore', 'Queues', 'type',
+            sm.create_index(database, 'Queues', 'type',
                 self.UTF8_TYPE, index_type=self.KEYS_INDEX)
 
     def close(self):
