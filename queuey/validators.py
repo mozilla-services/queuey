@@ -49,7 +49,7 @@ def comma_int_list(node, value):
 class GetMessages(colander.MappingSchema):
     since = colander.SchemaNode(colander.String(), missing=None)
     limit = colander.SchemaNode(colander.Int(), missing=None,
-                                validator=colander.Range(1, 100))
+                                validator=colander.Range(1, 1000))
     order = colander.SchemaNode(colander.String(), missing="ascending",
                                 validator=colander.OneOf(['descending',
                                                           'ascending']))
