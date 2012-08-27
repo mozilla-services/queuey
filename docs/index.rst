@@ -1,6 +1,6 @@
 .. include:: ../README.rst
     :start-line: 0
-    :end-line: 44
+    :end-line: 52
 
 Reference Material
 ==================
