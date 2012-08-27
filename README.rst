@@ -8,6 +8,8 @@ Queuey
    :alt: Travis CI build report
    :target: https://secure.travis-ci.org/#!/mozilla-services/queuey
 
+Read the full documentation at http://queuey.readthedocs.org/
+
 Wat? Another message queue?
 
 Given the proliferation of message queue's, one could be inclined to believe
