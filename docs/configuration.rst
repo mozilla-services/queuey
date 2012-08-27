@@ -43,6 +43,68 @@ Queuey is configured via an ini-style file, which is also used to configure
 general Pyramid settings. This ini file contains a number of sections. The
 following sections contain Queuey specific settings.
 
+[application_keys]
+------------------
+
+Contains a mapping of application name to application key. The application
+key acts as a shared secret between server and client. For example::
+
+    [application_keys]
+    app_1 = f25bfb8fe200475c8a0532a9cbe7651e
+
+[storage]
+---------
+
+Configures the storage for message data.
+
+backend
+    The type of storage, for Cassandra use:
+    `queuey.storage.cassandra.CassandraQueueBackend`
+
+Further settings are dependent on the storage.
+
+[metadata]
+----------
+
+Configures the storage for message metadata.
+
+backend
+    The type of storage, for Cassandra use:
+    `queuey.storage.cassandra.CassandraMetadata`
+
+Further settings are dependent on the storage.
+
+Cassandra storage options
+-------------------------
+
+The Cassandra storages support the following additional settings:
+
+host
+    A comma separated list of either `host` or `host:port` values specifying
+    the Cassandra servers. Defaults to `localhost:9160`.
+
+username
+    A username used for connecting to Cassandra's Thrift interface.
+    Currently this value is ignored.
+
+password
+    A password used for connecting to Cassandra's Thrift interface.
+    Currently this value is ignored.
+
+multi_dc
+    A boolean indicating whether or not Cassandra runs in a multi-datacenter
+    environment, defaults to `False`. If enabled, read and write operations
+    default to `LOCAL_QUORUM` instead of `QUORUM`.
+
+create_schema
+    A boolean value indicating if the required Cassandra schema should be
+    automatically created during startup. Defaults to `True`. If enabled the
+    first server in the host list is used and the keyspace names are
+    hard-coded to their defaults.
+
+database
+    The name of the keyspace, defaults to `MessageStore` for the storage and
+    `MetadataStore` for the metadata section.
 
 [metlog]
 --------
