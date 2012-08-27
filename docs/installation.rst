@@ -85,7 +85,8 @@ If setting up a cluster, or not installing Cassandra_ on the same node as the
 Queuey webapp the following directions should be used. Also note that this
 step does not install opscenter, which also requires the following.
 
-Download the source tarball to the desired directory:
+Download the source tarball to the desired directory (first check for newer
+versions):
 
 .. code-block:: bash
 
@@ -93,14 +94,14 @@ Download the source tarball to the desired directory:
     mkdir datastax
     cd datastax
 
-    wget http://downloads.datastax.com/community/dsc.tar.gz
+    wget http://downloads.datastax.com/community/dsc-cassandra-1.1.2-bin.tar.gz
 
     # On your first node *only*, get opscenter
-    wget http://downloads.datastax.com/community/opscenter.tar.gz
+    wget http://downloads.datastax.com/community/opscenter-2.1.2-free.tar.gz
 
     # Untar the distributions
-    tar -xzvf dsc.tar.gz
-    tar -xzvf opscenter.tar.gz
+    tar -xzvf dsc-cassandra-1.1.2-bin.tar.gz
+    tar -xzvf opscenter-2.1.2-free.tar.gz
 
     # Remove the tarballs
     rm *.tar.gz
